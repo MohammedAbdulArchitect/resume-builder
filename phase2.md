@@ -25,11 +25,10 @@ PHASE 2: Google auth, accounts, and the credit/ledger spine. Still no AI.
 
 Deliver:
 1. Auth.js with Google OAuth. Encrypted JWT session cookie. No password flows. Sign-in required before any resume action.
-2. Account creation on first sign-in (accounts table). Persist google_sub, email, locale, is_promo.
-3. Promo counter: atomic cap at 400 free signups. 401st new account marked non-promo. One grant per google_sub ever. This is HLD.md §10.
-4. Credit ledger module src/lib/billing/ledger.ts: debit/refund inside DB transactions, never negative, idempotent. And entitlements.ts: canTailorResume, canGenerateFAQPack, credit counters. HLD.md §5.2, §11.
-5. Account page: show credits, list saved resumes, self-service delete (resume + whole account, hard delete within 30 days).
+2. Account creation on first sign-in (accounts table). Persist google_sub, email, locale.
+3. Credit ledger module src/lib/billing/ledger.ts: debit/refund inside DB transactions, never negative, idempotent. And entitlements.ts: canTailorResume, canGenerateFAQPack, credit counters. HLD.md §5.2, §11.
+4. Account page: show credits, list saved resumes, self-service delete (resume + whole account, hard delete within 30 days).
 
-Tests: Vitest — ledger never goes negative, refund restores balance, promo counter caps at 400, entitlement gates reject free accounts. Playwright — sign-in flow reaches an authenticated page (mock the Google provider). Assert an unauthenticated user is redirected.
+Tests: Vitest — ledger never goes negative, refund restores balance, entitlement gates reject free accounts. Playwright — sign-in flow reaches an authenticated page (mock the Google provider). Assert an unauthenticated user is redirected.
 
 Manual checklist must include: sign in with a real Google account, confirm account row created, confirm credits show zero.

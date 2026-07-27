@@ -165,7 +165,6 @@ accounts
   email           text
   display_name    text
   locale          text          -- 'in' | 'intl'
-  is_promo        boolean        -- among first 400
   created_at      timestamptz
   last_seen_at    timestamptz
 
@@ -463,7 +462,6 @@ PDF rendering is CPU-bound and blocks the event loop. Route all render jobs thro
 
 - **Authentication:** Auth.js with Google OAuth. Session stored as an encrypted JWT cookie. No password flows.
 - **Authorization gate:** every route handler that touches a resume checks (a) valid session, (b) resource ownership (account_id match), (c) for premium features, `entitlements.ts`.
-- **Promo enforcement:** an atomic counter caps free signups at 400. The 401st Google sign-in that has no prior account is marked non-promo and shown the "free tier full" state. One grant per google_sub, ever.
 
 ---
 

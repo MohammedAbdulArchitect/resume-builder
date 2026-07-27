@@ -430,7 +430,6 @@ npm run db:migrate
 ✓ API modes: Real-Time (user-facing) + Batch (FAQ, 50% discount)
 ✓ Locales: India + international at launch
 ✓ Margins: 84.8–85.3% worst-case across all scenarios
-✓ First 400 free subscribers, then free tier closes
 ✓ No cover letters in v1 (v1.1 feature)
 ✓ No job board integration in v1 (v2.0 feature)
 

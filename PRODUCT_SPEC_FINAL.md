@@ -271,8 +271,6 @@ Can switch templates unlimited times before download. No purchase needed to prev
 - **Sign-in:** Google OAuth required (even for free tier)
 - **Free account:** Always free, no credit card
 - **Premium purchase:** One-time via Razorpay (India) or Stripe (international)
-- **Promo:** First 400 free signups, hard cap. After 400, free tier closes; users see "free tier full, upgrade to premium."
-- **Promo window:** 90 days from launch
 
 ---
 
@@ -399,8 +397,7 @@ Hostinger Web Apps, Node.js 20, GitHub auto-deploy.
 5. **Tailored resume:** Original + rewritten bullet shown side-by-side with accept/revert/regenerate controls.
 6. **FAQ generation:** Batched with visible progress. Results in 24 hours via webhook.
 7. **Cost audit:** Every model call logged in `usage_events`. Cost per free user < ₹1; cost per premium user (worst case) < ₹76.
-8. **Promo:** First 400 free signups close the free tier; 401st sees "free tier full, upgrade to premium."
-9. **Both personas, both locales:** Fresher + experienced professional, India + international, all rendering correctly in all 8 templates.
+8. **Both personas, both locales:** Fresher + experienced professional, India + international, all rendering correctly in all 8 templates.
 
 ---
 

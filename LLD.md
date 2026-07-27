@@ -5,10 +5,15 @@
 | Document | LLD v1.0 |
 | Date | 27 July 2026 |
 | Owner | Mohammed Abdul |
-| Status | Ready for implementation |
+| Status | Phases 1–3 implemented and reconciled below; Phases 4–10 sections are still design-stage, each marked "Not yet implemented" with the phase that will build it |
 | Based on | HLD.md, PRODUCT_SPEC_FINAL.md, CLAUDE_FINAL.md, MODEL_ROUTING_SPEC.md |
 
 This document translates the High-Level Design (HLD) into detailed implementation specifications. It covers database queries, API contract details, component interfaces, state management, and code-level design patterns.
+
+Originally written pre-implementation; reconciled against the real Phase
+2 (auth/accounts/credit ledger) and Phase 3 (upload/parse/review/ATS
+score) code in two passes — see git history for exactly which sections
+came from which pass.
 
 ---
 
@@ -64,26 +69,37 @@ racing `tests/e2e/auth.spec.ts` in parallel workers, not a hypothetical.
 
 ### 1.2 Resume Persistence
 
+Implemented in `src/lib/db/resumes.ts` (`createResume`, `getOwnedResume`,
+`updateResumeData`) and `src/lib/db/encryption.ts` (`encryptResumeData` /
+`decryptResumeData` — AES-256-GCM, key from `RESUME_ENCRYPTION_KEY`, packed
+as `iv(12) + authTag(16) + ciphertext`, separate from `DATABASE_URL` per
+HLD §5.3). `created_at`/`updated_at` are DB defaults, not passed explicitly.
+
 #### Save resume (encrypted)
 ```sql
-INSERT INTO resumes (account_id, title, resume_data_encrypted, is_tailored, created_at, updated_at)
-VALUES ($1, $2, $3, false, NOW(), NOW())
-RETURNING id, created_at;
+INSERT INTO resumes (account_id, title, resume_data_encrypted)
+VALUES ($1, $2, $3)
+RETURNING id;
 
--- Update (overwrite)
-UPDATE resumes 
+-- Update (overwrite) — ownership-scoped; returns zero rows if the resume
+-- doesn't exist or isn't owned by this account, which the caller treats
+-- as "not found" rather than a generic failure.
+UPDATE resumes
 SET resume_data_encrypted = $2, updated_at = NOW()
 WHERE id = $1 AND account_id = $3
-RETURNING id, updated_at;
+RETURNING id;
 ```
 
 #### Retrieve resume
 ```sql
-SELECT resume_data_encrypted, is_tailored, created_at 
-FROM resumes 
-WHERE id = $1 AND account_id = $2;
--- Decrypt in application layer using env key
+SELECT * FROM resumes WHERE id = $1 AND account_id = $2;
+-- Decrypt in the application layer using RESUME_ENCRYPTION_KEY; the
+-- database never sees plaintext resume content.
 ```
+
+**Two write paths, both live:** `/api/parse` calls `createResume` on first
+upload (Phase 3); the review form's explicit Save button calls
+`updateResumeData` on the same row afterward (see §4.1).
 
 ### 1.3 Credit Ledger
 
@@ -131,6 +147,10 @@ calls `debitTailoredResumeCredit` in a live request path yet, since
 
 ### 1.4 Usage Logging
 
+> **Not yet implemented** — Phase 6+ (first real model call). The
+> `usage_events` table exists (Phase 1 migration) but nothing writes to it
+> yet.
+
 #### Log every model call
 ```sql
 INSERT INTO usage_events (account_id, operation, model, mode, tokens_in, tokens_out, cost_usd, created_at)
@@ -150,6 +170,9 @@ LIMIT 1;
 ```
 
 ### 1.5 FAQ Job Lifecycle
+
+> **Not yet implemented** — Phase 9. The `faq_jobs` table exists (Phase 1
+> migration) but nothing reads or writes it yet.
 
 #### Enqueue FAQ generation
 ```sql
@@ -178,61 +201,65 @@ WHERE id = $1 AND batch_id = $3;
 
 ### 2.1 POST /api/parse
 
-**Purpose:** Free-tier resume parsing (zero model calls)
+**Purpose:** Free-tier resume parsing (zero model calls) — implemented,
+`src/app/api/parse/route.ts`.
 
-**Request:**
-```typescript
-{
-  file: File,          // PDF, DOCX, or TXT
-  locale: 'in' | 'intl'
-}
-```
+**Request:** `multipart/form-data`, a single `file` field (PDF/DOCX/TXT).
+`locale` is **not** sent by the client — the server reads it off the
+signed-in account's own `locale` column, so a caller can't spoof it.
 
 **Response (200):**
 ```typescript
 {
   resumeId: string,
-  parsedData: ResumeData,
-  unassignedContent: string[],
-  parsingConfidence: number  // 0-100, how much of the file was understood
+  resumeData: ResumeData,      // full object, not "parsedData"
+  unassigned: { id: string; text: string }[],  // not plain strings — each
+                                                 // block needs a stable id
+                                                 // so the review form can
+                                                 // remove it once assigned
 }
 ```
 
-**Response (400):**
-```typescript
-{
-  error: string,  // e.g., "File too large (>10MB)" or "Unsupported format"
-}
-```
+There is no `parsingConfidence` score. The heuristic parser doesn't grade
+its own output — the review form's Unassigned panel and the live ATS
+score are the feedback the user actually gets.
+
+**Error responses** — one status per failure mode, not a single generic 400:
+
+| Status | Cause |
+|---|---|
+| 401 | No session |
+| 413 | File over 10MB (checked via `content-length` header early, and again against the actual buffer length after reading — the header can lie) |
+| 415 | Extension isn't `.pdf`/`.docx`/`.txt` |
+| 422 | Recognized extension but the extractor threw (corrupt file) |
 
 **Implementation:**
 ```typescript
 // src/app/api/parse/route.ts
-export async function POST(req: Request) {
-  const session = await auth(); // Check auth
-  const formData = await req.formData();
-  const file = formData.get('file') as File;
-  
-  // Route based on file type
-  let text: string;
-  if (file.type.includes('pdf')) {
-    text = await parsePDF(file);
-  } else if (file.type.includes('word')) {
-    text = await parseDOCX(file);
-  } else if (file.type === 'text/plain') {
-    text = await file.text();
-  } else {
-    return Response.json({ error: 'Unsupported format' }, { status: 400 });
+export async function POST(request: Request) {
+  const session = await auth();
+  const accountId = session?.user?.accountId;
+  if (!accountId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+  // ... content-length pre-check, formData(), extension whitelist,
+  // 10MB buffer-length check (see actual file for the full sequence) ...
+
+  const account = await getAccountById(accountId);
+  const locale: Locale = account?.locale === 'intl' ? 'intl' : 'in';
+
+  let result;
+  try {
+    result = await parseUploadedFile({ buffer, filename: file.name, locale });
+  } catch {
+    return Response.json({ error: 'Could not read that file...' }, { status: 422 });
   }
-  
-  // Extract and heuristically classify
-  const parsedData = heuristicParse(text);
-  const unassigned = extractUnassigned(text, parsedData);
-  
-  // Persist (encrypted)
-  const resumeId = await saveResume(session.user.id, parsedData);
-  
-  return Response.json({ resumeId, parsedData, unassignedContent: unassigned });
+
+  const title = result.data.personal.fullName
+    ? `${result.data.personal.fullName} — Resume`
+    : 'Untitled Resume';
+  const { id } = await createResume({ accountId, title, data: result.data });
+
+  return Response.json({ resumeId: id, resumeData: result.data, unassigned: result.unassigned });
 }
 ```
 
@@ -299,6 +326,8 @@ export async function POST(req: Request) {
 
 ### 2.3 POST /api/rewrite (Sonnet Real-Time)
 
+> **Not yet implemented** — Phase 7. Currently a `501` stub.
+
 **Purpose:** Bullet rewriting with regeneration support
 
 **Request:**
@@ -329,6 +358,9 @@ export async function POST(req: Request) {
 ```
 
 ### 2.4 POST /api/faq/enqueue (Async, Batch)
+
+> **Not yet implemented** — Phase 9. Currently a `501` stub
+> (`src/app/api/faq/route.ts`).
 
 **Purpose:** Queue FAQ generation for async processing
 
@@ -391,6 +423,10 @@ export async function POST(req: Request) {
 
 ### 2.5 POST /api/export (Both Tiers)
 
+> **Not yet implemented** — Phase 8. Currently a `501` stub. The
+> cost-domain firewall (`eslint.config.mjs`) already covers this route,
+> same as `/api/parse`, since export never touches the model either.
+
 **Purpose:** Generate PDF or DOCX from ResumeData
 
 **Request:**
@@ -435,6 +471,9 @@ if (!Object.values(assertion).every(v => v)) {
 ```
 
 ### 2.6 POST /api/billing/webhook (Razorpay/Stripe)
+
+> **Not yet implemented** — Phase 5. Currently a `501` stub
+> (`src/app/api/billing/route.ts`).
 
 **Purpose:** Handle payment confirmations (idempotent)
 
@@ -504,147 +543,161 @@ export async function POST(req: Request) {
 
 ### 3.1 ResumeData Type (Single Source of Truth)
 
+The zod schema is the actual source of truth (`src/lib/schema/resume.ts`) —
+TS types are `z.infer`'d from it, not hand-duplicated, so they can't drift
+apart. Two things earlier drafts of this doc got wrong, both because they
+under-weighted **"optional-tolerant"** (HLD §5.1): the free-tier heuristic
+parser frequently can't detect a field, and the schema has to accept that
+gracefully rather than reject the whole document.
+
 ```typescript
-// src/lib/schema/resume.ts
+// src/lib/schema/resume.ts (abridged — see the file for every section)
 
-export type Bullet = {
-  text: string;
-  origin: 'source' | 'rewritten' | 'generated';
-  originalText?: string;  // Retained for diffs/reverts
-};
+export const bulletOriginSchema = z.enum(['source', 'rewritten', 'generated']);
 
-export type Experience = {
-  company: string;
-  title: string;
-  location: string;
-  start: Date;
-  end: Date | null;
-  current: boolean;
-  bullets: Bullet[];
-};
+// Named ProvenancedText, not "Bullet" — it's also used for `summary`,
+// not just experience/project bullets.
+export const provenancedTextSchema = z
+  .object({
+    text: z.string(),
+    origin: bulletOriginSchema,
+    originalText: z.string().optional(),
+  })
+  // Hard invariant, not just a convention: a 'rewritten' entry must keep
+  // its originalText, or the schema rejects it outright.
+  .refine((v) => v.origin !== 'rewritten' || typeof v.originalText === 'string');
 
-export type ResumeData = {
-  meta: {
-    targetRole?: string;
-    targetCompany?: string;
-    seniority?: string;
-    locale: 'in' | 'intl';
-    pageSize: 'A4' | 'Letter';
-  };
-  personal: {
-    fullName: string;
-    headline?: string;
-    email: string;
-    phone: string;
-    location: string;
-    links?: { label: string; url: string }[];
-    photo?: { dataUrl: string; includeInResume: boolean };
-  };
-  summary?: string;
-  experience: Experience[];
-  education: [...]; // Similar structure
-  skills: [...];
-  projects?: [...];
-  certifications?: [...];
-  achievements?: string[];
-  languages?: [...];
-  // ... other sections
-};
-
-// Zod validator (strict)
-const bulletSchema = z.object({
-  text: z.string().min(10),
-  origin: z.enum(['source', 'rewritten', 'generated']),
-  originalText: z.string().optional()
+// Dates are free-form strings ("Jun 2025", "2019-02", "Present"), not
+// Date objects — they come from regex-matching arbitrary resume text,
+// which can't be reliably parsed into a real Date without inventing a
+// canonical format the user never asked for.
+export const experienceEntrySchema = z.object({
+  company: z.string().optional(),
+  title: z.string().optional(),
+  location: z.string().optional(),
+  start: z.string().optional(),
+  end: z.string().optional(),
+  current: z.boolean().default(false),
+  bullets: z.array(provenancedTextSchema).default([]),
 });
 
-const resumeDataSchema = z.object({
-  meta: z.object({
-    targetRole: z.string().optional(),
-    locale: z.enum(['in', 'intl']),
-    pageSize: z.enum(['A4', 'Letter'])
-  }),
-  personal: z.object({
-    fullName: z.string().min(2),
-    email: z.string().email(),
-    phone: z.string()
-    // ... others
-  }),
-  experience: z.array(z.object({
-    company: z.string(),
-    title: z.string(),
-    bullets: z.array(bulletSchema)
-    // ... others
-  })),
-  // ... others
+// personal.fullName/email/phone are ALL optional, not required with
+// z.string().email() validation — a heuristic parser routinely fails to
+// find any of them, and the user fills gaps manually rather than the
+// upload being rejected outright.
+export const personalInfoSchema = z.object({
+  fullName: z.string().optional(),
+  headline: z.string().optional(),
+  email: z.string().optional(),
+  phone: z.string().optional(),
+  location: z.string().optional(),
+  links: z.array(linkSchema).default([]),
+  photo: z.string().optional(), // a plain string, not { dataUrl, includeInResume }
+});
+
+export const resumeDataSchema = z.object({
+  meta: resumeMetaSchema.default({ locale: 'in', pageSize: 'A4' }),
+  personal: personalInfoSchema.default({ links: [] }),
+  summary: provenancedTextSchema.optional(),
+  experience: z.array(experienceEntrySchema).default([]),
+  education: z.array(educationEntrySchema).default([]),
+  skills: z.array(skillEntrySchema).default([]),
+  projects: z.array(projectEntrySchema).default([]),
+  certifications: z.array(certificationEntrySchema).default([]),
+  achievements: z.array(z.string()).default([]),
+  languages: z.array(languageEntrySchema).default([]),
+  publications: z.array(publicationEntrySchema).default([]),
+  volunteering: z.array(volunteeringEntrySchema).default([]),
+  custom: z.array(customSectionSchema).default([]),
 });
 
 export type ResumeData = z.infer<typeof resumeDataSchema>;
 ```
 
-### 3.2 Free-Tier Upload Component
+`publications`/`volunteering`/`custom` exist in the schema but have no
+dedicated review-form editor yet (Phase 3's parser doesn't produce them,
+and they're not part of the three fixture personas) — they stay empty
+arrays until a later phase needs them.
+
+### 3.2 Free-Tier Upload + Review (Actual Architecture)
+
+The real thing is two routes, not one component, because the "unassigned
+content" and "live ATS score" requirements need somewhere to live between
+parse and save:
+
+- **`src/app/(free)/upload/page.tsx`** (server, `requireAccount()` gate) +
+  **`upload-form.tsx`** (client): drag-drop zone + file picker, client-side
+  extension/size validation (defense in depth — the server re-validates),
+  `fetch('/api/parse', { method: 'POST', body: formData })`. On success, it
+  stashes the returned `unassigned` blocks into `sessionStorage` keyed by
+  resume id (`src/app/(free)/unassigned-storage.ts`) — a parse-time-only
+  concept, never persisted to the DB — then `router.push`es to
+  `/review/[resumeId]`.
+- **`src/app/(free)/review/[resumeId]/page.tsx`** (server,
+  `requireAccount()` + ownership check via `getOwnedResume`, `notFound()`
+  otherwise) + **`review-form.tsx`** (client, ~550 lines): per-section
+  editors (personal, summary, experience, education, skills, projects,
+  certifications, achievements, languages) with add/remove/move-up/down;
+  the Unassigned panel reads its one-time sessionStorage stash on mount
+  (a lazy `useState` initializer, not a `useEffect` + `setState`, to avoid
+  an extra render and the SSR-has-no-`sessionStorage` problem) and offers
+  both native HTML5 drag-and-drop onto a section **and** a keyboard-operable
+  "Add to section" select+button per block, since drag-and-drop alone
+  isn't accessible; a live `computeAtsScore` badge recomputes on every
+  edit via `useMemo`.
+- **`src/app/(free)/review/[resumeId]/actions.ts`**: `saveResumeData`
+  Server Action — ownership check, zod-validate, `updateResumeData`. This
+  is an **explicit Save button**, not autosave (CLAUDE_FINAL I3: nothing
+  persists without the user seeing and confirming it). Full crash/reload
+  draft recovery (NFR N5) isn't built — a page reload before saving loses
+  edits, same as the parse-time Unassigned blocks.
+
+### 3.3 Template Registry (Current State: One Template)
 
 ```typescript
-// src/app/(free)/upload/page.tsx
-
-export default function UploadPage() {
-  const [file, setFile] = useState<File | null>(null);
-  const [parsing, setParsing] = useState(false);
-  const [parsed, setParsed] = useState<ResumeData | null>(null);
-  
-  const handleUpload = async () => {
-    setParsing(true);
-    const fd = new FormData();
-    fd.append('file', file!);
-    
-    const res = await fetch('/api/parse', { method: 'POST', body: fd });
-    const { resumeId, parsedData } = await res.json();
-    
-    setParsed(parsedData);
-    // Store resumeId for downstream use
-  };
-  
-  return (
-    <div>
-      <input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-      <button onClick={handleUpload} disabled={!file || parsing}>
-        {parsing ? 'Parsing...' : 'Upload'}
-      </button>
-      {parsed && <ResumeEditor initialData={parsed} />}
-    </div>
-  );
+// src/templates/types.ts
+export interface TemplateDefinition {
+  slug: string;
+  name: string;
+  description: string;
+  component: ComponentType<TemplateProps>;
+  // ATS-relevant layout facts consumed by ats/score.ts's computeAtsScore —
+  // not a precomputed static atsScore number, since the score also depends
+  // on the resume DATA (date-format consistency, plain-text contact info),
+  // not just the template.
+  isSingleColumn: boolean;
+  hasTableContent: boolean;
+  hasStandardHeadings: boolean;
+  fontInApprovedList: boolean;
 }
-```
 
-### 3.3 Template Registry (Extensible)
-
-```typescript
-// src/templates/registry.ts
-
-import ATSPlain from './ats-plain';
-import ModernClean from './modern-clean';
-// ... others
-
-export const TEMPLATES = {
-  'ats-plain': {
+// src/templates/registry.ts — only one entry so far; Phase 4 adds the
+// other 7. No `pdf`/`docx` dynamic-import fields yet (Phase 8).
+export const templateRegistry: TemplateDefinition[] = [
+  {
+    slug: 'ats-plain',
     name: 'ATS Plain',
-    component: ATSPlain,
-    pdf: () => import('./ats-plain/ats-plain.pdf'),
-    docx: () => import('./ats-plain/ats-plain.docx'),
-    atsScore: 100
+    component: AtsPlainTemplate,
+    isSingleColumn: true,
+    hasTableContent: false,
+    hasStandardHeadings: true,
+    fontInApprovedList: true,
   },
-  'modern-clean': {
-    name: 'Modern Clean',
-    component: ModernClean,
-    // ...
-  }
-  // ... 8 total
-} as const;
-
-export type TemplateName = keyof typeof TEMPLATES;
+];
 ```
+
+`computeAtsScore` (`src/lib/ats/score.ts`) combines these template flags
+with two data-derived predicates — `hasConsistentDateFormat` (all
+start/end dates across experience+education classify into the same shape:
+month-year, ISO month, year-only, or slash-date) and `contactAsPlainText`
+(no `<`/`>` markup leaked into email/phone/location) — per the weighting
+in CLAUDE_FINAL §5: 25/15/20/15/15/10, capped at 100.
 
 ### 3.4 PDF Export (react-pdf)
+
+> **Not yet implemented** — Phase 8. `src/lib/export/pdf/index.ts` is
+> still an empty placeholder. The sketch below is unchanged from the
+> original draft and remains design-stage.
 
 ```typescript
 // src/lib/export/pdf.ts
@@ -676,29 +729,34 @@ export function ResumePDF({ data, template }: { data: ResumeData; template: Temp
 
 ## 4. State Management (Server + Client)
 
-### 4.1 Resume State (Persisted)
+### 4.1 Resume State (Persisted, Explicit Save — Not Autosave)
 
-**Server side:** Postgres `resumes` table
-```sql
-id, account_id, resume_data_encrypted, is_tailored, created_at, updated_at
-```
+**Server side:** Postgres `resumes` table (`id, account_id, title,
+resume_data_encrypted, is_tailored, source_resume_id, created_at,
+updated_at`).
 
-**Client side (React):** Local state + autosave
+**Client side (React):** local state, no autosave interval, no
+`/api/resumes/:id` PUT route. The review form holds the draft in
+`useState`, edits it immutably section-by-section, and only calls the
+`saveResumeData` Server Action (§3.2, §1.2) when the user clicks Save:
+
 ```typescript
-const [resumeData, setResumeData] = useState<ResumeData>(initialData);
+const [data, setData] = useState<ResumeData>(initialData);
+// ... every section editor calls setData with an immutable update ...
 
-// Autosave every 10s
-useEffect(() => {
-  const interval = setInterval(() => {
-    fetch(`/api/resumes/${resumeId}`, {
-      method: 'PUT',
-      body: JSON.stringify(resumeData)
-    });
-  }, 10000);
-  
-  return () => clearInterval(interval);
-}, [resumeData, resumeId]);
+async function handleSave() {
+  setSaveState('saving');
+  const result = await saveResumeData(resumeId, data); // Server Action
+  setSaveState(result.ok ? 'saved' : 'error');
+}
 ```
+
+This was a deliberate choice, not an oversight: I3 ("nothing exports
+without confirmation") reads naturally as "nothing *persists* without
+confirmation" too, and a 10-second autosave interval is one more moving
+part than this phase needed. The tradeoff: a page reload before clicking
+Save loses the edits (and the Unassigned blocks, which are session-only
+regardless — see §3.2). Full draft recovery (NFR N5) is future scope.
 
 ### 4.2 Credit State (Server-Rendered, No Client Fetch)
 
@@ -721,6 +779,17 @@ full navigation on return from checkout, not a polling fetch loop.
 ---
 
 ## 5. Error Handling
+
+> **Not yet formalized.** Routes built so far (`/api/health`, `/api/parse`,
+> the Server Actions) return plain `{ error: string }` with the specific
+> HTTP status the failure warrants (see §2.1's table) — no `code` field, no
+> `timestamp`, no shared `apiError()` helper yet. No `ErrorBoundary`
+> component exists either; the review form surfaces save failures with a
+> `role="alert"` paragraph next to the Save button. The structured version
+> below is a reasonable target once enough routes exist to make a shared
+> helper worth it (naturally around Phase 6+, when there are real model-call
+> failure modes to distinguish) — introducing it now, with two real routes,
+> would be the abstraction arriving before the second or third caller needs it.
 
 ### 5.1 Standardized Error Response
 
@@ -769,44 +838,74 @@ export function ErrorBoundary({ children }: { children: React.ReactNode }) {
 
 ## 6. Testing Strategy
 
+What's actually built (Phases 1–3): 37 Vitest tests across 7 files, 4
+Playwright specs, all passing. `tests/` at the repo root, not colocated
+next to source — established in Phase 1 and kept consistent since.
+
 ### 6.1 Unit Tests (Vitest)
 
-```typescript
-// src/lib/schema/resume.test.ts
-
-describe('ResumeData validator', () => {
-  it('accepts valid resume data', () => {
-    const data = { /* valid fixture */ };
-    expect(() => resumeDataSchema.parse(data)).not.toThrow();
-  });
-  
-  it('rejects malformed data', () => {
-    const data = { /* missing required fields */ };
-    expect(() => resumeDataSchema.parse(data)).toThrow();
-  });
-});
-```
+- `tests/schema.test.ts` — all 3 fixtures validate; a `rewritten` bullet
+  missing `originalText` is rejected (the schema-level invariant, §3.1).
+- `tests/ats-plain.test.tsx` — the ATS Plain template renders all 3
+  fixtures without throwing.
+- `tests/parsers.test.ts` — the regex heuristic parser against 3 new
+  plain-text fixtures (`fixtures/*.txt`, same three personas as the JSON
+  fixtures): name/company/title recovered, multi-entry experience/education
+  sections split correctly, unrecognized preamble text lands in
+  `unassigned`, malformed/empty input never throws.
+- `tests/parsers-io.test.ts` — `pdf-parse`/`mammoth` wrappers are *mocked*
+  here, deliberately: they're thin (~5 line) wrappers around mature,
+  independently-tested libraries, so these tests prove *our* wrapper calls
+  them correctly and propagates text/errors, rather than re-testing binary
+  PDF/DOCX parsing itself. The real depth is in `parsers.test.ts`, which
+  exercises the logic we actually own.
+- `tests/ats-score.test.ts` — `computeAtsScore` boundary cases (each
+  criterion's deduction verified independently), plus
+  `hasConsistentDateFormat`/`contactAsPlainText`.
+- `tests/free-tier-zero-api-calls.test.ts` — **the critical test.** Spies
+  on global `fetch`, runs the entire free-tier journey (parse all 3
+  fixtures, compute ATS scores) in-process, asserts `fetch` is never
+  called. `src/lib/ai/client.ts` is still an empty placeholder, so there's
+  no real Anthropic client to spy on yet — this is the strongest dynamic
+  guarantee available now (zero network calls of any kind, which subsumes
+  "zero Anthropic calls"), and it'll keep working as a regression guard
+  once Phase 6 adds a real client. The ESLint cost-domain firewall
+  (`eslint.config.mjs`, scoped to `(free)/**`, `api/parse/**`,
+  `api/export/**`) is the complementary *static* guarantee.
+- `tests/ledger.test.ts` — runs against the **real dev Neon database**
+  (`tests/setup.ts` loads `.env.local`), not mocks: debit never goes
+  negative, debits decrement exactly one, refund restores balance, faq and
+  tailored-resume credits are independent, entitlement gates reject a
+  fresh zero-credit account and an account with expired-but-positive
+  credits. Each test creates and cleans up its own disposable account row.
 
 ### 6.2 Integration Tests (Playwright)
 
-```typescript
-// e2e/free-tier.spec.ts
+`tests/e2e/`, one `chromium` project, `fullyParallel: false` (two spec
+files share a fixed test identity — see below), `webServer.env:
+{ AUTH_TEST_MODE: "1" }`.
 
-test('Free tier: upload → edit → download', async ({ page }) => {
-  await page.goto('http://localhost:3000');
-  await page.click('button:has-text("Upload")');
-  await page.setInputFiles('input[type=file]', 'fixtures/resume.pdf');
-  // Wait for parse and verify parsed data appears
-  await page.waitForSelector('input[value*="Jane Smith"]');
-  // Edit a field
-  await page.fill('input[value*="Engineer"]', 'Senior Engineer');
-  // Download
-  const downloadPromise = page.waitForEvent('download');
-  await page.click('button:has-text("Download PDF")');
-  const download = await downloadPromise;
-  expect(download.suggestedFilename()).toContain('Resume.pdf');
-});
-```
+- `preview.spec.ts` — loads `/template/preview`, asserts name/company/title
+  reach the DOM.
+- `auth.spec.ts` — unauthenticated `/account` redirects to `/signin`; the
+  test-only sign-in flow reaches `/account`.
+- `upload-review.spec.ts` — signs in, uploads `fixtures/fresher-it.txt` at
+  `/upload`, lands on `/review/:id`, edits the email field to include
+  markup (flips `contactAsPlainText` false), watches the ATS score badge
+  move from 100 to 85, saves.
+
+**The test-only sign-in path:** a second Auth.js provider,
+`credentials-test`, is added to the config **only when
+`process.env.AUTH_TEST_MODE === "1"`** — never set outside the Playwright
+`webServer`, never enabled in production. It runs the *real*
+`upsertAccountOnSignIn` code path, just skipping Google's actual OAuth
+redirect. `auth.spec.ts` and `upload-review.spec.ts` both sign in as the
+same fixed identity (`test-google-sub`); cleanup happens exactly once, in
+`tests/e2e/global-teardown.ts` (raw SQL, not a re-import of
+`src/lib/db/accounts.ts` — Playwright's `globalTeardown` execution context
+doesn't apply the same tsconfig path-alias resolution spec files get), not
+per-file — a per-file `afterAll` was tried first and found to race the
+*other* spec file still using that same account mid-run.
 
 ---
 
@@ -825,24 +924,32 @@ test('Free tier: upload → edit → download', async ({ page }) => {
 
 ## 8. Performance Considerations
 
-### 8.1 Database Indexing
+> Nothing in this section is implemented yet — recommendations, not
+> current state. `accounts.google_sub` has a `UNIQUE` constraint (Phase 1
+> migration), which Postgres backs with an index automatically; the other
+> indexes below, the caching strategy, and the render queue are all still
+> open for whichever phase first needs them (the render queue matters once
+> Phase 8 adds real PDF export; NFR N7 already calls for it).
+
+### 8.1 Database Indexing (Recommended, Not Yet Added)
 
 ```sql
-CREATE INDEX idx_accounts_google_sub ON accounts(google_sub);
 CREATE INDEX idx_resumes_account_id ON resumes(account_id);
 CREATE INDEX idx_credits_account_id ON credits(account_id);
 CREATE INDEX idx_usage_events_account_id_created ON usage_events(account_id, created_at DESC);
 ```
 
-### 8.2 Caching Strategy
+### 8.2 Caching Strategy (Recommended, Not Yet Added)
 
 - **Resume data:** Cache in memory for 10 min per user
 - **Credits:** Query fresh on every paid operation (no cache)
 - **Usage events:** Aggregate query cached 5 min for daily spend check
 
-### 8.3 PDF Rendering Queue
+### 8.3 PDF Rendering Queue (Phase 8)
 
-Keep concurrent renders ≤ 2 to avoid blocking other requests. Use a simple in-process queue (Bull or similar).
+Keep concurrent renders ≤ 2 to avoid blocking other requests (NFR N7). Use
+a simple in-process queue (Bull or similar) — not needed until Phase 8
+adds real `@react-pdf/renderer` export.
 
 ---
 
@@ -853,9 +960,17 @@ Keep concurrent renders ≤ 2 to avoid blocking other requests. Use a simple in-
   encrypted (JWE), httpOnly, secure in production. `sameSite=lax` (Auth.js's
   default), not `strict` — `strict` would drop the cookie on the top-level
   redirect back from Google's OAuth consent screen, breaking sign-in.
-- **Rate limiting:** 100 requests/min per account on `/api/*` routes
-- **CORS:** Same-origin only (no cross-origin API calls)
-- **Input validation:** Zod on every POST/PUT
-- **SQL injection:** Parameterized queries (Drizzle handles this)
-- **Secrets:** Environment variables only, never in code or commits
+- **Rate limiting:** 100 requests/min per account on `/api/*` routes —
+  **not yet implemented** (NFR N4); no route currently enforces this.
+- **CORS:** Same-origin only — no explicit config exists; this is
+  currently just Next.js's default behavior, not a deliberate Phase 1–3
+  decision.
+- **Input validation:** Zod on every POST/PUT — true for what's built:
+  `resumeDataSchema` validates the parser's output before persistence
+  (`/api/parse`) and again before every save (`saveResumeData`).
+- **SQL injection:** Parameterized queries (Drizzle handles this) — holds.
+- **Secrets:** Environment variables only, never in code or commits —
+  holds; `.env.local`/`.env.local.txt` stay gitignored,
+  `RESUME_ENCRYPTION_KEY`/`AUTH_SECRET`/`AUTH_GOOGLE_*` are placeholders
+  in `.env.example`.
 

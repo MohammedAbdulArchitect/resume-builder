@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>People Manager — Backup Team | Interview Q&A Guide</title>
+<style>
+  body { font-family: Arial, sans-serif; background: #f4f6f9; color: #222; font-size: 16px; line-height: 1.7; margin: 0; }
+  .header { background: #1a1a2e; color: white; padding: 40px 30px; }
+  .header h1 { font-size: 28px; margin: 0 0 8px; }
+  .header h1 span { color: #f0883e; }
+  .header p { color: #aaa; margin: 0; font-size: 15px; }
+  .tags { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .tag { background: rgba(240,136,62,.2); color: #f0883e; border: 1px solid rgba(240,136,62,.4); border-radius: 20px; padding: 4px 12px; font-size: 12px; font-weight: bold; }
+  nav { background: #222; padding: 10px 30px; display: flex; gap: 6px; flex-wrap: wrap; }
+  nav a { color: #aaa; text-decoration: none; font-size: 13px; padding: 6px 12px; border-radius: 6px; }
+  nav a:hover { background: #333; color: white; }
+  .main { max-width: 820px; margin: 0 auto; padding: 30px 20px 60px; }
+  .alert { background: #fff3cd; border-left: 4px solid #f0ad4e; border-radius: 0 8px 8px 0; padding: 14px 18px; margin-bottom: 30px; font-size: 14px; color: #555; }
+  .alert strong { color: #222; }
+  .card { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.08); margin-bottom: 30px; overflow: hidden; }
+  .card-header { padding: 18px 22px; display: flex; align-items: center; gap: 14px; }
+  .card-header.orange { background: #fff4ec; border-left: 4px solid #f0883e; }
+  .card-header.blue   { background: #eef4ff; border-left: 4px solid #4a90d9; }
+  .card-header.green  { background: #edfaf1; border-left: 4px solid #27ae60; }
+  .card-header.purple { background: #f5eeff; border-left: 4px solid #8e44ad; }
+  .card-header.red    { background: #fdecea; border-left: 4px solid #e74c3c; }
+  .card-header.teal   { background: #e8faf8; border-left: 4px solid #17a589; }
+  .card-header.gold   { background: #fefce8; border-left: 4px solid #d4ac0d; }
+  .card-icon { font-size: 28px; }
+  .card-label { font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: .06em; color: #888; margin-bottom: 3px; }
+  .card-title { font-size: 17px; font-weight: bold; color: #1a1a2e; }
+  .card-body { padding: 22px 24px; }
+  .box { border-radius: 8px; padding: 14px 16px; margin-bottom: 14px; font-size: 14px; }
+  .box-yellow { background: #fffbea; border: 1px solid #f0c040; }
+  .box-red    { background: #fdecea; border: 1px solid #f5c6c4; }
+  .box-green  { background: #edfaf1; border: 1px solid #a8d5b5; }
+  .box-blue   { background: #eef4ff; border: 1px solid #a8c4e8; }
+  .box-label  { font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+  .box-yellow .box-label { color: #b8860b; }
+  .box-red    .box-label { color: #c0392b; }
+  .box-green  .box-label { color: #1e8449; }
+  .box-blue   .box-label { color: #2471a3; }
+  .box p { margin: 0; color: #444; }
+  .answer-box { background: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 10px; padding: 20px 22px; margin: 16px 0; }
+  .answer-label { font-size: 11px; font-weight: bold; text-transform: uppercase; color: #f0883e; letter-spacing: .06em; margin-bottom: 10px; }
+  .answer-box p { font-size: 15px; color: #333; margin-bottom: 12px; }
+  .answer-box p:last-child { margin: 0; }
+  .answer-box .hi { color: #c0392b; font-weight: bold; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 16px 0; }
+  @media(max-width:580px){ .two-col { grid-template-columns:1fr; } }
+  .do-box   { background: #edfaf1; border: 1px solid #a8d5b5; border-radius: 8px; padding: 14px 16px; }
+  .dont-box { background: #fdecea; border: 1px solid #f5c6c4; border-radius: 8px; padding: 14px 16px; }
+  .do-lbl   { font-size: 12px; font-weight: bold; color: #1e8449; text-transform: uppercase; margin-bottom: 8px; }
+  .dont-lbl { font-size: 12px; font-weight: bold; color: #c0392b; text-transform: uppercase; margin-bottom: 8px; }
+  ul.simple { padding-left: 18px; margin: 0; }
+  ul.simple li { font-size: 13px; color: #444; padding: 3px 0; }
+  .steps { margin: 14px 0; }
+  .step { display: flex; gap: 12px; margin-bottom: 10px; align-items: flex-start; }
+  .step-num { background: #f0883e; color: white; border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; flex-shrink: 0; margin-top: 2px; }
+  .step-text { font-size: 14px; color: #444; }
+  .step-text strong { color: #222; }
+  p.body { color: #444; font-size: 14px; margin-bottom: 12px; }
+  .final { background: white; border-radius: 12px; padding: 24px 26px; box-shadow: 0 2px 8px rgba(0,0,0,.08); border-top: 3px solid #f0883e; }
+  .final h3 { font-size: 17px; color: #1a1a2e; margin: 0 0 14px; }
+  .final-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media(max-width:580px){ .final-grid { grid-template-columns:1fr; } }
+  .fcard { border-radius: 8px; padding: 14px 16px; border-top: 3px solid; }
+  .fcard.or { border-color: #f0883e; background: #fff4ec; }
+  .fcard.bl { border-color: #4a90d9; background: #eef4ff; }
+  .fcard.gr { border-color: #27ae60; background: #edfaf1; }
+  .fcard.pu { border-color: #8e44ad; background: #f5eeff; }
+  .fcard h4 { font-size: 13px; color: #222; margin: 0 0 6px; }
+  .fcard p  { font-size: 13px; color: #555; margin: 0; }
+  footer { text-align: center; padding: 30px; color: #888; font-size: 12px; border-top: 1px solid #e0e0e0; }
+  footer span { color: #f0883e; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>People Manager — Backup Team<br><span>Behavioral Interview Q&amp;A Guide</span></h1>
+  <p>12 essential behavioral questions from the Job Interview Cheat Sheet — tailored for a People Manager role in an enterprise backup and data protection team.</p>
+  <div class="tags">
+    <span class="tag">Tell Me Your Story</span>
+    <span class="tag">Hardest Problem</span>
+    <span class="tag">Ethical Dilemma</span>
+    <span class="tag">Sets You Apart</span>
+    <span class="tag">Missed Problem</span>
+    <span class="tag">Greatest Strengths</span>
+    <span class="tag">Weaknesses</span>
+    <span class="tag">Multiple Responsibilities</span>
+    <span class="tag">Missed Deadline</span>
+    <span class="tag">Why Work Here</span>
+    <span class="tag">Difficult Colleague</span>
+    <span class="tag">Why Leave</span>
+  </div>
+</div>
+
+<nav>
+  <a href="#q1">Your Story</a>
+  <a href="#q2">Hardest Problem</a>
+  <a href="#q3">Ethical Dilemma</a>
+  <a href="#q4">Sets You Apart</a>
+  <a href="#q5">Missed Problem</a>
+  <a href="#q6">Strengths</a>
+  <a href="#q7">Weaknesses</a>
+  <a href="#q8">Multitasking</a>
+  <a href="#q9">Missed Deadline</a>
+  <a href="#q10">Why Here</a>
+  <a href="#q11">Difficult Person</a>
+  <a href="#q12">Why Leave</a>
+  <a href="#tips">Final Tips</a>
+</nav>
+
+<div class="main">
+
+  <div class="alert">
+    <strong>How to use this guide:</strong> Read the "What they really want to know" box first — that is the hidden agenda behind the question. Then read the answer slowly and practice saying it out loud. All answers are written specifically for a People Manager with a backup and data protection background.
+  </div>
+
+  <!-- Q1 -->
+  <div class="card" id="q1">
+    <div class="card-header orange">
+      <div class="card-icon">🗣️</div>
+      <div>
+        <div class="card-label">Question 01 · Your Story</div>
+        <div class="card-title">"Tell me your story."</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="box box-yellow">
+        <div class="box-label">🎯 What they really want to know</div>
+        <p>Can you tell a clear, confident story about your career? Does your background connect logically to this role? Are you someone with direction — or someone who just moved from job to job? Share your work journey showing how it fits this role. Keep it under 5 minutes. Use your past as proof.</p>
+      </div>
+      <div class="box box-red">
+        <div class="box-label">❌ Do NOT say these things</div>
+        <p>"I started as a fresher and..." (too far back, not relevant) / Listing every job without connecting them to backup or leadership / Making it sound like this is just a next step, not a destination you chose deliberately.</p>
+      </div>
+      <div class="answer-box">
+        <div class="answer-label">✅ Your Answer — Career Arc with Purpose</div>
+        <p>"I'll keep this focused on what's most relevant to this role. I have spent over a decade in enterprise backup and data protection — starting as a backup engineer working hands-on with Commvault, Veritas, and Veeam, and progressing into team leadership and people management.</p>
+        <p><span class="hi">The technical foundation came first.</span> I learned backup deeply — not just how to configure jobs, but how to design recovery architectures, troubleshoot DR failures under pressure, and explain complex data loss scenarios to clients in plain language during a crisis. That ground-level experience is what makes me a credible manager to backup engineers today — they know I have done the work myself.</p>
+        <p><span class="hi">Then came the people management side.</span> I moved into leading backup teams — hiring engineers, building onboarding programs, managing SLA governance, handling vendor escalations, and owning client relationships. I reduced new hire ramp-up time by building structured knowledge bases and mentoring programs. I improved team MTTR by focusing on root cause discipline and structured post-incident reviews.</p>
+        <p>This role interests me because it combines both — deep technical credibility and people leadership — in a backup-specific context. That is exactly where I do my best work."</p>
+      </div>
+      <div class="two-col">
+        <div class="do-box">
+          <div class="do-lbl">✓ DO</div>
+          <ul class="simple">
+            <li>Show a clear arc: technical engineer → team lead → people manager</li>
+            <li>Connect each stage to skills needed in this role</li>
+            <li>End with why this role is your logical next step</li>
+            <li>Keep it under 4–5 minutes — don't ramble</li>
+          </ul>
+        </div>
+        <div class="dont-box">
+          <div class="dont-lbl">✗ DON'T</div>
+          <ul class="simple">
+            <li>Start from education or your first ever job</li>
+            <li>List employers without connecting them</li>
+            <li>Sound like you are reading a CV out loud</li>
+            <li>Forget to mention backup/data protection specifically</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q2 -->
+  <div class="card" id="q2">
+    <div class="card-header blue">
+      <div class="card-icon">🔥</div>
+      <div>
+        <div class="card-label">Question 02 · Problem Solving</div>
+        <div class="card-title">"What is the hardest problem you've ever worked on?"</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="box box-yellow">
+        <div class="box-label">🎯 What they really want to know</div>
+        <p>They are testing your problem-solving depth and how you handle real pressure. They want to see that you can explain clearly why it was hard, what you specifically did, and what you learned. A vague answer here signals weak problem-solving. Pick a real backup crisis — not a process issue.</p>
+      </div>
+      <div class="box box-red">
+        <div class="box-label">❌ Do NOT say these things</div>
+        <p>"Managing workload was hard." (too generic for a manager) / "A backup job kept failing." (too operational, not leadership-level) / Any answer where you cannot name a specific decision you made and the outcome it produced.</p>
+      </div>
+      <div class="answer-box">
+        <div class="answer-label">✅ Your Answer — A Real Backup Crisis</div>
+        <p>"The hardest problem I faced was a ransomware attack on a client's environment where both their primary and secondary backup copies were encrypted. The attacker had been dormant in the network for over 40 days before activating — meaning even our most recent backup was potentially compromised.</p>
+        <p><span class="hi">What made it truly hard was pressure from three directions simultaneously:</span> the client's CEO demanding a recovery timeline within the first hour, my team of 8 engineers who had never faced this scenario at scale, and a vendor whose support response was too slow for the window we had.</p>
+        <p>My first decision was to stop the team from rushing into a restore. The pressure to "just recover something quickly" is exactly where most ransomware recoveries fail — you can re-infect a clean environment. I called a 15-minute structured triage: what do we know, what do we not know, and what can we not do yet.</p>
+        <p><span class="hi">We found a tape-based air-gapped backup from 47 days prior — before the infection window.</span> We isolated a clean recovery environment, staged the restore there first, validated no indicators of compromise were present, then began a phased production recovery over 18 hours. The client lost 47 days of incremental data — but recovered a fully clean, functional environment.</p>
+        <p>What I changed after: air-gap backup frequency moved from monthly to weekly, immutability enabled on all cloud copies, and a quarterly DR simulation added to the contract. The architecture decision made calmly in planning is what saves you in a crisis."</p>
+      </div>
+      <div class="steps">
+        <p class="body" style="font-weight:bold;color:#222;">Framework to structure your answer:</p>
+        <div class="step"><div class="step-num">1</div><div class="step-text"><strong>Set the scene:</strong> what was the situation and why was it hard?</div></div>
+        <div class="step"><div class="step-num">2</div><div class="step-text"><strong>The pressure:</strong> competing forces — client, team, technical constraints</div></div>
+        <div class="step"><div class="step-num">3</div><div class="step-text"><strong>Your decision:</strong> what specific call did you make and why?</div></div>
+        <div class="step"><div class="step-num">4</div><div class="step-text"><strong>The outcome:</strong> honest result with numbers where possible</div></div>
+        <div class="step"><div class="step-num">5</div><div class="step-text"><strong>What changed after:</strong> show the organisation improved because of you</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q3 -->
+  <div class="card" id="q3">
+    <div class="card-header purple">
+      <div class="card-icon">⚖️</div>
+      <div>
+        <div class="card-label">Question 03 · Integrity</div>
+        <div class="card-title">"Tell me about a time you faced an ethical dilemma. How did you handle it?"</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="box box-yellow">
+        <div class="box-label">🎯 What they really want to know</div>
+        <p>They want to see high integrity and the ability to make difficult decisions under pressure — even when it costs you something. They want someone who can be trusted with client data, vendor relationships, and team decisions. Show that you chose the harder right thing over the easier wrong one.</p>
+      </div>
+      <div class="box box-red">
+        <div class="box-label">❌ Do NOT say these things</div>
+        <p>"I haven't really faced one." (shows no self-awareness) / A minor workplace disagreement that was not truly ethical / Blaming others throughout — without showing what you personally decided and did.</p>
+      </div>
+      <div class="answer-box">
+        <div class="answer-label">✅ Your Answer — Integrity Under Pressure</div>
+        <p>"I was managing a backup team when one of my senior engineers made a critical error during a restore operation — he accidentally restored an older backup version over a live production database, overwriting 6 hours of transaction data. It happened late on a Friday.</p>
+        <p><span class="hi">The dilemma: he panicked and suggested we recover quietly, without disclosing the exact cause to the client.</span> He was worried about the contract and his job. I understood his fear completely. But I knew exactly what the right call was.</p>
+        <p>Within 30 minutes, I called the client's IT Director personally. I told him exactly what happened, what caused it, what data was affected, and what our recovery plan was. I did not name the engineer — the mistake happened under my watch, so I owned it as the manager. That is what accountability means in leadership.</p>
+        <p><span class="hi">The client was initially furious — but they respected the transparency completely.</span> By the end of that call, we were working together on recovery instead of against each other. We recovered 4 of the 6 hours through transaction log replay. The client renewed the contract and later cited that call specifically as the reason they trusted us.</p>
+        <p>What I changed permanently: a mandatory dual-engineer approval process for all production restore operations. No single engineer can initiate a production restore without a second engineer confirming the target environment. That one change removed the risk entirely."</p>
+      </div>
+      <div class="two-col">
+        <div class="do-box">
+          <div class="do-lbl">✓ DO</div>
+          <ul class="simple">
+            <li>Show you chose the harder right thing over the easier wrong thing</li>
+            <li>Own the outcome — even if it was not your personal error</li>
+            <li>Show what specific change you made after to prevent recurrence</li>
+          </ul>
+        </div>
+        <div class="dont-box">
+          <div class="dont-lbl">✗ DON'T</div>
+          <ul class="simple">
+            <li>Pick an example where you just "followed company rules"</li>
+            <li>Throw a team member under the bus publicly in your answer</li>
+            <li>Make the dilemma sound minor or easily resolved</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q4 -->
+  <div class="card" id="q4">
+    <div class="card-header green">
+      <div class="card-icon">🏆</div>
+      <div>
+        <div class="card-label">Question 04 · Differentiation</div>
+        <div class="card-title">"What sets you apart from other candidates?"</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="box box-yellow">
+        <div class="box-label">🎯 What they really want to know</div>
+        <p>They are interviewing multiple managers. What makes you the one they remember? This is not a modesty moment. Highlight your top 5 strengths directly related to this role — backed by specific backup management examples, not generic management clichés. Use the job description as your guide.</p>
+      </div>
+      <div class="box box-red">
+        <div class="box-label">❌ Do NOT say these things</div>
+        <p>"I'm a hard worker." / "I'm passionate about backup." / "I care about my team." — Every candidate says these. None of it is memorable or differentiating. Give specifics backed by evidence.</p>
+      </div>
+      <div class="answer-box">
+        <div class="answer-label">✅ Your Answer — Five Specific Differentiators</div>
+        <p>"I'll give you five specific things that distinguish me — all backed by what I have actually done in backup management roles.</p>
+        <p><span class="hi">First: I am technically credible to my own team.</span> I have configured Commvault, Veeam, and Veritas environments myself. When an engineer brings me an escalation, I can engage at the technical level — not just escalate upward. That credibility means my team trusts my decisions, especially during high-pressure recoveries.</p>
+        <p><span class="hi">Second: I build systems, not just manage tasks.</span> I don't just run the team — I build infrastructure that makes the team better over time: knowledge bases, onboarding runbooks, SLA dashboards, escalation matrices. These outlast me. When I leave a team, it functions better than when I arrived.</p>
+        <p><span class="hi">Third: I manage up and across, not just down.</span> I can present a complex backup failure to a CFO in business impact language — without losing technical accuracy. I am comfortable in a boardroom during a crisis and in a technical war room with engineers at the same time.</p>
+        <p><span class="hi">Fourth: I have real ransomware and DR experience</span> — not theoretical. I have led teams through live recovery events where client RTO was 4 hours and we had 3 hours left. That experience cannot be taught from a textbook and it shows in how I make decisions under pressure.</p>
+        <p><span class="hi">Fifth: I develop people deliberately.</span> I track each engineer's growth individually, create development plans, push for certifications, and run internal knowledge-sharing sessions. In my last team, two engineers were promoted to senior roles within 18 months. That retention and growth saves the company significant hiring and ramp-up cost."</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q5 -->
+  <div class="card" id="q5">
+    <div class="card-header teal">
+      <div class="card-icon">🔍</div>
+      <div>
+        <div class="card-label">Question 05 · Initiative</div>
+        <div class="card-title">"Share an experience when you identified a missed problem. How did you discover it, and what action did you take?"</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="box box-yellow">
+        <div class="box-label">🎯 What they really want to know</div>
+        <p>They are testing whether you are proactive or reactive. A manager who only responds to problems is a firefighter. They want someone who spots issues before they become crises — and then does something about it. You are being tested on your initiative and ability to get things done. Give specific examples.</p>
+      </div>
+      <div class="box box-red">
+        <div class="box-label">❌ Do NOT say these things</div>
+        <p>"I always try to be proactive." (too vague) / An example where someone else pointed it out first / A very minor operational issue that any engineer would have caught.</p>
+      </div>
+      <div class="answer-box">
+        <div class="answer-label">✅ Your Answer — Proactive Discovery with Real Impact</div>
+        <p>"During a quarterly SLA review, I noticed something no one had flagged: our backup success rate metrics were consistently showing 98–99% — which looked healthy on paper. But when I manually checked the actual job logs, I discovered our reporting was counting jobs that completed with warnings as successes.</p>
+        <p><span class="hi">Those warnings included skipped open files, VSS writer errors, and expired credentials on specific databases.</span> None had failed the job status — but several of those skipped files were production database transaction logs. We had been showing clients a green dashboard for months while silently missing critical data components.</p>
+        <p>I raised this immediately with the account managers. We did not wait for a client to discover it. I personally pulled 90 days of job logs across our top 10 accounts, categorised every warning type by business risk level, and presented a full risk report to each client's IT governance team within one week.</p>
+        <p><span class="hi">The fix was two-part:</span> immediate remediation (reconfigure VSS writers, update credentials, explicitly cover the missed file types) and permanent reporting definition change — a "success" now means zero warnings on critical data paths, not just a completed job status.</p>
+        <p>Three months later, one client's auditor reviewed our backup reports and specifically praised the transparency of our warning categorisation. That trust was earned because we found the problem ourselves — before they did."</p>
+      </div>
+      <div class="box box-blue">
+        <div class="box-label">💡 Key message to land clearly</div>
+        <p>You found it yourself by digging deeper than the surface metric. You acted fast. You fixed both the immediate symptom and the root cause reporting definition. You told the client proactively. That is what a strong backup manager does — they do not trust dashboards blindly.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q6 -->
+  <div class="card" id="q6">
+    <div class="card-header gold">
+      <div class="card-icon">💪</div>
+      <div>
+        <div class="card-label">Question 06 · Self-Awareness</div>
+        <div class="card-title">"What are your greatest strengths?"</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="box box-yellow">
+        <div class="box-label">🎯 What they really want to know</div>
+        <p>They want strengths directly relevant to a backup team people manager — not generic qualities. Talk about strengths related to the role you are interviewing for. Use the job description as your guide. Every strength you name should connect to a specific responsibility of this manager role.</p>
+      </div>
+      <div class="answer-box">
+        <div class="answer-label">✅ Your Answer — Three Role-Relevant Strengths with Evidence</div>
+        <p>"My three greatest strengths for this specific role are crisis leadership, team development, and operational discipline.</p>
+        <p><span class="hi">Crisis leadership:</span> Backup teams live or die by how they perform when things go wrong. I have led teams through live DR activations, ransomware recoveries, and SLA breach escalations. Under pressure I stay calm, make structured decisions quickly, and keep communication clear to all stakeholders simultaneously — client, leadership, and my engineers — without contradicting myself or creating confusion.</p>
+        <p><span class="hi">Team development:</span> I don't just manage workload — I build engineers. I identify each person's technical gaps, create individual learning plans, push for certifications, and run internal knowledge-sharing sessions. The results: lower attrition, faster onboarding, and a team that can handle escalations independently without needing me in every incident.</p>
+        <p><span class="hi">Operational discipline:</span> I am systematic and structured. I build runbooks, SLA tracking frameworks, escalation matrices, and reporting structures. When I hand a process to my team, it is documented well enough that a new hire can follow it on day one. This reduces single points of failure and makes the entire team resilient to staff changes."</p>
+      </div>
+      <div class="box box-green">
+        <div class="box-label">💡 Strong closing line to add</div>
+        <p>"The job description for this role specifically mentions SLA governance, team leadership, and client escalation management. Those are the three areas where I consistently receive the strongest feedback from both clients and senior leadership."</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q7 -->
+  <div class="card" id="q7">
+    <div class="card-header red">
+      <div class="card-icon">🪞</div>
+      <div>
+        <div class="card-label">Question 07 · Self-Awareness</div>
+        <div class="card-title">"What are your weaknesses?"</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="box box-yellow">
+        <div class="box-label">🎯 What they really want to know</div>
+        <p>They want genuine self-awareness and a real commitment to improvement. The weakness must be real — not a disguised strength. It must not be a core skill for this role. Choose something genuine, show the specific steps you are actively taking, and show you have already made measurable progress.</p>
+      </div>
+      <div class="box box-red">
+        <div class="box-label">❌ Do NOT say these things</div>
+        <p>"I work too hard." / "I'm a perfectionist." — Interviewers hear these daily and they signal a lack of real self-awareness. Also avoid naming a weakness that is a core requirement — e.g., "I struggle with giving difficult feedback to my team."</p>
+      </div>
+      <div class="answer-box">
+        <div class="answer-label">✅ Your Answer — Real Weakness + Visible Improvement</div>
+        <p>"My genuine weakness is over-involvement in technical escalations. Early in my management career, when an incident came in that I knew how to solve, I would often step in and resolve it myself rather than coaching the engineer through it. It was faster in the short term — but it was preventing my team from developing and was creating dependency on me personally.</p>
+        <p><span class="hi">I recognised this when a senior engineer told me in a 1-on-1 that he felt I was taking ownership of escalations before he had a real chance to try.</span> That was uncomfortable feedback — but it was completely accurate.</p>
+        <p>Since then I have deliberately changed my approach. When an escalation comes in, I now ask the engineer: "What do you think we should do first?" I listen before I speak. I coach instead of doing. I only step in directly when the situation is genuinely time-critical and the engineer is stuck — not just because I can solve it faster than them.</p>
+        <p>The result: my team's independent escalation resolution rate improved significantly over the following 6 months, and two engineers moved into senior roles. The discipline of holding back is still something I consciously practise — but I am significantly better at it than I was, and the team is stronger for it."</p>
+      </div>
+      <div class="two-col">
+        <div class="do-box">
+          <div class="do-lbl">✓ DO</div>
+          <ul class="simple">
+            <li>Choose a real weakness — not a strength wearing a disguise</li>
+            <li>Show specific steps you took to address it</li>
+            <li>Share evidence that you have already made progress</li>
+          </ul>
+        </div>
+        <div class="dont-box">
+          <div class="dont-lbl">✗ DON'T</div>
+          <ul class="simple">
+            <li>Name a weakness that disqualifies you for a manager role</li>
+            <li>Give a rehearsed fake answer — they will see through it</li>
+            <li>End without showing growth or changed behaviour</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q8 -->
+  <div class="card" id="q8">
+    <div class="card-header blue">
+      <div class="card-icon">🎯</div>
+      <div>
+        <div class="card-label">Question 08 · Organisation</div>
+        <div class="card-title">"Describe a situation where you had to manage multiple responsibilities. How did you get everything done?"</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="box box-yellow">
+        <div class="box-label">🎯 What they really want to know</div>
+        <p>Backup managers operate in 24x7 environments where multiple critical events run simultaneously. They want to see a real prioritisation system — not "I worked harder." Describe how you organise, prioritise, delegate, and communicate when everything demands your attention at the same time.</p>
+      </div>
+      <div class="answer-box">
+        <div class="answer-label">✅ Your Answer — Real System Under Real Pressure</div>
+        <p>"There was a two-week period where I was simultaneously managing: a live ransomware investigation for one client, an SLA breach review for a second client, the onboarding of three new engineers, and a quarterly performance review cycle — all running at the same time.</p>
+        <p><span class="hi">My first step was to categorise by impact and time-sensitivity, not by volume or who was shouting loudest.</span> The ransomware investigation was client-facing and genuinely time-critical — that got dedicated focused blocks in the morning when my thinking is sharpest. The SLA breach review had a fixed deadline — I scheduled a specific 3-hour block rather than letting it bleed into every day. Engineer onboarding I delegated to a senior engineer with a structured checklist I had already built — I ran 15-minute daily check-ins to stay informed without doing the work myself. Performance reviews I batched into evenings using a structured template — work that does not require real-time interaction.</p>
+        <p><span class="hi">I also made my prioritisation visible to my team.</span> I updated them daily on which work I was leading versus what I had delegated — so no one was waiting on me for something I had already handed off. Transparency about your own workload prevents the bottlenecks that quietly kill team productivity.</p>
+        <p>Everything was delivered on time. The key was not more hours — it was making explicit, visible decisions about what got my direct attention and what got a good system plus oversight."</p>
+      </div>
+      <div class="steps">
+        <p class="body" style="font-weight:bold;color:#222;">The framework to remember:</p>
+        <div class="step"><div class="step-num">1</div><div class="step-text"><strong>Categorise</strong> — by business impact and urgency, not by who shouted loudest</div></div>
+        <div class="step"><div class="step-num">2</div><div class="step-text"><strong>Schedule focused blocks</strong> — give each priority dedicated, protected time</div></div>
+        <div class="step"><div class="step-num">3</div><div class="step-text"><strong>Delegate with systems</strong> — don't just hand off, give tools and run check-ins</div></div>
+        <div class="step"><div class="step-num">4</div><div class="step-text"><strong>Make it visible</strong> — communicate your own workload so the team is never blocked waiting on you</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q9 -->
+  <div class="card" id="q9">
+    <div class="card-header red">
+      <div class="card-icon">⏰</div>
+      <div>
+        <div class="card-label">Question 09 · Accountability</div>
+        <div class="card-title">"Tell me about a time you missed a deadline. How did you handle it?"</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="box box-yellow">
+        <div class="box-label">🎯 What they really want to know</div>
+        <p>Everyone misses a deadline at some point. They are not looking for perfection — they are testing your honesty, your communication under pressure, and whether you learn and improve. Be honest about the circumstances without placing blame. Highlight how you communicated it and what you changed.</p>
+      </div>
+      <div class="box box-red">
+        <div class="box-label">❌ Do NOT say these things</div>
+        <p>"I have never missed a deadline." (not believable) / Blaming the team, vendor, or client entirely / Choosing an example where the missed deadline had no real consequence.</p>
+      </div>
+      <div class="answer-box">
+        <div class="answer-label">✅ Your Answer — Honest, Accountable, Forward-Looking</div>
+        <p>"I was leading a project to migrate a client's on-premises backup environment to a cloud-based solution with a committed 8-week timeline. At week 5 it became clear we would miss it by at least two weeks. The primary cause was that the client's network team had not completed their firewall rule updates — a dependency that was outside my team's direct control.</p>
+        <p><span class="hi">The honest mistake on my part: I had recorded this dependency in the original risk register but had not proactively chased the client's network team for status during weeks 2 and 3.</span> By week 5 the delay had compounded into something unavoidable.</p>
+        <p>What I did immediately: I did not wait until week 8 to tell the client. As soon as I confirmed the delay was unavoidable — at week 5 — I called the client's project sponsor directly. I explained the situation clearly: what caused the delay, the revised timeline, and what I was doing to prevent further slippage. I did not place blame — I said "this is where we are, and here is exactly how we recover."</p>
+        <p><span class="hi">The client was disappointed but appreciated the early communication significantly.</span> We agreed on a revised 10-week timeline, added weekly dependency status calls with the client's network team, and delivered precisely on week 10.</p>
+        <p>What I changed permanently: every project plan I run now has a dedicated dependency tracking section with a named owner and a weekly escalation trigger if any dependency falls more than 3 days behind schedule."</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q10 -->
+  <div class="card" id="q10">
+    <div class="card-header orange">
+      <div class="card-icon">🏢</div>
+      <div>
+        <div class="card-label">Question 10 · Motivation</div>
+        <div class="card-title">"Why do you want to work here?"</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="box box-yellow">
+        <div class="box-label">🎯 What they really want to know</div>
+        <p>Have you researched this company specifically? Do you understand what they do in the backup and data protection space? They want someone who chose them deliberately — not someone who applied to every open manager role. Research the company, find something specific, and use it in your answer.</p>
+      </div>
+      <div class="box box-red">
+        <div class="box-label">❌ Do NOT say these things</div>
+        <p>"Good salary and career growth." / "Big company with a strong reputation." / "I want a new challenge." — This tells them nothing and will not be remembered. Every candidate says this.</p>
+      </div>
+      <div class="answer-box">
+        <div class="answer-label">✅ Your Answer — Research + Values + Career Fit</div>
+        <p>"Three specific reasons drew me to this company — not just any backup team manager role, but this one specifically.</p>
+        <p><span class="hi">First, the way this company approaches data protection aligns with how I think about it.</span> [Insert one specific thing you researched — their backup product strategy, a cloud partnership, their approach to immutability or cyber-resilience, a client case study.] That matches the architecture philosophy I have been building into my teams — not just protecting data, but making recovery reliable and tested.</p>
+        <p><span class="hi">Second, this role is the right scope and scale for where I am in my career.</span> I have led backup teams through technical crises and built the operational infrastructure around them — runbooks, SLA frameworks, knowledge bases. I want to do this at a larger scale, with more complex client environments and a team I can develop over time. This role offers that scope.</p>
+        <p><span class="hi">Third, I want to work somewhere that treats data protection as a primary service, not a background feature.</span> Ransomware has made backup a board-level conversation. I want to be part of a team where the work my engineers do is the reason clients sleep at night. That is the kind of meaningful work I want to lead."</p>
+      </div>
+      <div class="box box-blue">
+        <div class="box-label">💡 Do this before every interview</div>
+        <p>Spend 30 minutes researching the specific company: their backup product direction, any recent partnerships (Commvault, Rubrik, Veeam, Zerto), ransomware recovery offerings, or cloud backup strategy. Use one specific fact in your answer. That single detail separates you from every other candidate who just read the job description.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q11 -->
+  <div class="card" id="q11">
+    <div class="card-header purple">
+      <div class="card-icon">🤝</div>
+      <div>
+        <div class="card-label">Question 11 · Emotional Intelligence</div>
+        <div class="card-title">"Give an example of when you worked with someone difficult. How did you manage the situation?"</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="box box-yellow">
+        <div class="box-label">🎯 What they really want to know</div>
+        <p>This tests your emotional intelligence — your ability to find common ground, maintain working relationships under friction, and communicate without escalating conflict. They want to see that you addressed it directly, that you listened before reacting, and that you found a resolution. Show your EQ.</p>
+      </div>
+      <div class="box box-red">
+        <div class="box-label">❌ Do NOT say these things</div>
+        <p>"I reported them to HR." (skipped direct communication) / "I just got on with my work and ignored it." (avoidance) / Making the other person sound entirely unreasonable — it makes you look biased, not balanced.</p>
+      </div>
+      <div class="answer-box">
+        <div class="answer-label">✅ Your Answer — EQ in a Real Backup Team Situation</div>
+        <p>"I had a situation with a senior backup engineer on my team who was technically excellent but strongly resistant to a new change management procedure I introduced for production restore operations. He pushed back openly in team meetings — calling it "unnecessary bureaucracy" — and his attitude was influencing others negatively.</p>
+        <p><span class="hi">My first move was not to confront him in the meeting.</span> I pulled him aside privately the same day. I opened by genuinely asking for his perspective: "I want to understand your concerns properly — what specifically feels like it adds friction for you?" I listened without interrupting or defending.</p>
+        <p>What I found was a valid concern: he felt the new approval step would slow him down during a high-urgency restore when every minute counted. That was a legitimate operational worry — and one I had not fully addressed for P1 scenarios. <span class="hi">He was not being difficult for the sake of it — he was protecting something he genuinely cared about: fast client recovery.</span></p>
+        <p>I adjusted the process: for P1 emergencies, a verbal approval from the team lead was acceptable — logged immediately after. For P2 and below, the written approval remained. He helped me design that exception. When we presented the updated process to the full team, he was the one who explained why the P1 exception made operational sense.</p>
+        <p>He became one of the strongest advocates for the process because he helped shape it. The lesson: difficult people often have a legitimate point underneath the resistance. Your job as a manager is to find it."</p>
+      </div>
+      <div class="two-col">
+        <div class="do-box">
+          <div class="do-lbl">✓ DO</div>
+          <ul class="simple">
+            <li>Show you addressed it directly and privately first</li>
+            <li>Show genuine curiosity about their perspective before reacting</li>
+            <li>Show a resolution that worked for both sides</li>
+          </ul>
+        </div>
+        <div class="dont-box">
+          <div class="dont-lbl">✗ DON'T</div>
+          <ul class="simple">
+            <li>Make yourself the hero and the other person purely the villain</li>
+            <li>Skip the part where you listened to their side</li>
+            <li>Choose an example you did not personally resolve</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q12 -->
+  <div class="card" id="q12">
+    <div class="card-header green">
+      <div class="card-icon">🚪</div>
+      <div>
+        <div class="card-label">Question 12 · Motivation</div>
+        <div class="card-title">"Why do you want to leave your current role?"</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="box box-yellow">
+        <div class="box-label">🎯 What they really want to know</div>
+        <p>They want to know if you are running toward an opportunity or away from a problem. Running away signals instability. Running toward something bigger shows ambition and direction. They are also quietly asking: "Will this person badmouth us one day?" Stay entirely positive. Focus on what you hope to gain — challenge and growth — not what you are escaping.</p>
+      </div>
+      <div class="box box-red">
+        <div class="box-label">❌ Do NOT say these things</div>
+        <p>"My manager is difficult." / "The culture is poor." / "I am not paid enough." / "There is no growth." — Even if these are completely true, saying them makes you look like a complainer. It also signals you might say the same about this company in 18 months.</p>
+      </div>
+      <div class="answer-box">
+        <div class="answer-label">✅ Your Answer — Forward-Focused, Always Positive</div>
+        <p>"I have had a genuinely good experience in my current role — I have learned a lot, delivered results I am proud of, and built strong relationships with both clients and colleagues. I am not leaving because something is wrong.</p>
+        <p><span class="hi">I am leaving because I have reached the ceiling of what I can build in that environment.</span> The team I manage is stable, the processes are set, and the clients are in steady state. That is actually a sign of success — but it also means I am spending more time maintaining than building. I am at my best when I am building — new team structures, new client relationships, new operational frameworks from a foundational level.</p>
+        <p><span class="hi">What drew me here specifically is the scale and complexity of the challenge.</span> Larger client environments, more complex backup architectures, and the opportunity to build and grow a team at a stage where I can make a real difference — that is where I know I can contribute most.</p>
+        <p>I also want to be transparent: I am making this move deliberately, not reactively. I have been evaluating opportunities for several months with specific criteria in mind — the right technical scope, the right team size, and a company that takes data protection seriously as a core service. This role and this company meet all three."</p>
+      </div>
+      <div class="box box-green">
+        <div class="box-label">💡 The golden rule for this question</div>
+        <p>Never badmouth your current company, manager, or team — no matter how justified it feels. The interviewer is quietly asking themselves: "Will they talk about us like this one day?" Frame everything as moving toward growth, not away from problems. End on energy, not relief.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- FINAL TIPS -->
+  <div class="final" id="tips">
+    <h3>🏁 Final Tips Before the Interview</h3>
+    <div class="final-grid">
+      <div class="fcard or">
+        <h4>Use STAR Structure</h4>
+        <p>Situation → Task → Action → Result. Every behavioral answer should follow this. If you cannot name a specific Result, find a better example.</p>
+      </div>
+      <div class="fcard bl">
+        <h4>Use Backup-Specific Numbers</h4>
+        <p>MTTR improvement, SLA breach reduction, onboarding ramp-up time, team size, number of accounts managed. Numbers make you memorable when every other candidate speaks in generalities.</p>
+      </div>
+      <div class="fcard gr">
+        <h4>Practice Out Loud</h4>
+        <p>Say these answers out loud to yourself or a friend. Answers that sound polished on paper sound natural when spoken practice. Read them silently and you will sound rehearsed in the room.</p>
+      </div>
+      <div class="fcard pu">
+        <h4>End Every Answer Positively</h4>
+        <p>Even missed deadlines and weaknesses must end with what you improved, what you learned, or what you changed. Never end a behavioral answer on a low note — always close with growth or outcome.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Behavioral Interview Guide · <span>People Manager — Backup &amp; Data Protection Team</span> · Based on Job Interview Cheat Sheet Framework
+</footer>
+
+</body>
+</html>

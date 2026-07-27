@@ -1,0 +1,5 @@
+.vs/
+*.zip
+*.pdf
+node_modules/
+*.log

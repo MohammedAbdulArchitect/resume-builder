@@ -1,0 +1,208 @@
+# PROJECT: ATS Resume & CV Builder — Web Application
+
+## YOUR ROLE
+You are a senior full-stack engineer. Build a production-quality web app that
+turns a candidate's existing resume + a target job description into a tailored,
+ATS-friendly resume, exportable as PDF and DOCX.
+
+Before writing any code: read this whole brief, then give me (a) your proposed
+tech stack with reasons, (b) a folder structure, (c) a phased build plan, and
+(d) any clarifying questions. Wait for my approval before scaffolding.
+
+## USERS
+Two personas, both must be first-class:
+- Fresher / entry-level: little or no work history, needs projects, coursework,
+  internships, and skills foregrounded.
+- Experienced: needs impact-driven bullets, seniority signalling, and
+  role-specific keyword alignment.
+Domain-agnostic: IT, finance, healthcare, teaching, sales, mechanical, legal, etc.
+Do not hardcode software-engineering assumptions anywhere.
+
+## PROPOSED STACK (challenge it if you disagree)
+- Next.js (App Router) + TypeScript + Tailwind + shadcn/ui
+- Server-side API routes only for anything touching the model key
+- Anthropic API (claude-sonnet-4-6) for parsing assistance, gap analysis,
+  bullet rewriting, and FAQ generation. Key in .env.local, never client-side.
+- Resume ingest: pdf-parse (PDF), mammoth (DOCX), plain text passthrough
+- PDF export: @react-pdf/renderer (deterministic, no headless browser) OR
+  Puppeteer HTML→PDF if fidelity to the HTML templates matters more — pick one
+  and justify it
+- DOCX export: the `docx` npm package, generated from the same structured data
+- State: structured JSON in memory + localStorage draft recovery. No database in
+  Phase 1. Design the data layer so Postgres/Supabase can be added later.
+
+## CORE PRINCIPLE: ONE SCHEMA, MANY RENDERERS
+Everything flows through a single canonical `ResumeData` TypeScript type.
+Templates, PDF export, DOCX export, and the editor all read from it. Never let a
+template own content, and never let the exporters re-parse HTML.
+
+Define roughly:
+  ResumeData {
+    meta: { targetRole, targetCompany?, seniority, industry, locale }
+    personal: { fullName, headline, email, phone, location, links[], photo? }
+    summary: string
+    experience: [{ company, title, location, start, end, current, bullets[] }]
+    education: [{ institution, degree, field, start, end, grade?, highlights[] }]
+    skills: [{ name, category, proficiency: 'knowledge' | 'hands-on', years? }]
+    projects: [{ name, role, description, stack[], bullets[], link? }]
+    certifications: [{ name, issuer, date, credentialId? }]
+    achievements: string[]
+    languages, publications, volunteering, custom sections[]
+  }
+Every field must be optional-tolerant — real resumes are messy.
+
+## USER FLOW (build exactly these 7 steps, with a persistent stepper)
+
+STEP 1 — Input
+- Upload a sample resume: PDF, DOCX, or TXT. Drag-drop + file picker. 10MB cap.
+- Optional: paste or upload a job description.
+- Optional: upload a photo (JPG/PNG). Client-side crop to square + compress.
+  Show a clear warning: photos are conventional in India, the EU and the Gulf,
+  but harmful for US/UK/Canada applications and break some ATS parsers. Let the
+  user proceed either way; default to OFF.
+- Optional: target role and seniority dropdowns if no JD is supplied.
+
+STEP 2 — Parse & Confirm
+- Extract into ResumeData. Show every extracted field in an editable review
+  form, with low-confidence fields visually flagged.
+- Never silently drop content. Anything unparsed goes into an "Unassigned
+  content" bucket the user can drag into a section.
+
+STEP 3 — Job Description Analysis (skipped if no JD)
+- Extract required skills, preferred skills, responsibilities, and ATS keywords
+  from the JD.
+- Produce a gap report: Matched / Partially matched / Missing.
+- Show a match score (0–100) with a breakdown of how it was computed. No black box.
+
+STEP 4 — Skill Gap Decisions  [IMPORTANT — INTEGRITY GUARDRAIL]
+For each missing skill, ask the user how it applies to them:
+  a) "I have hands-on experience"  → prompt for where: which role or project,
+     and roughly how long. Generate a bullet grounded in what they supply.
+  b) "I have theoretical / coursework knowledge" → add to skills with
+     proficiency 'knowledge'; surface it under a clearly labelled group such as
+     "Familiar / Coursework" — never under core skills.
+  c) "Not applicable"  → exclude, and suggest a genuine adjacent strength.
+The app must never invent experience the user did not claim. Bake this into the
+system prompt for the rewriting model, and show a one-line notice in the UI:
+tailoring rephrases what you've done, it does not fabricate history.
+
+STEP 5 — Template & Options
+- Template gallery with live thumbnails rendered from the user's own data.
+- Photo on/off, accent colour, font pairing, density (compact/standard/roomy),
+  page target (1 page / 2 pages / no limit), date format, locale (A4 vs Letter).
+- Toggle: "Also generate an interview FAQ pack for this role" (see below).
+
+STEP 6 — Draft Review & Edit
+- Split view: editable structured form on the left, live template preview right.
+- Inline edit for every field. Reorder sections and bullets by drag.
+- For each AI-rewritten bullet show: original text, new text, Accept / Revert /
+  Regenerate, plus a free-text "rewrite with this instruction" box.
+- Keyword coverage panel that updates live as the user edits.
+- Undo/redo. Autosave draft to localStorage every 5s.
+- Nothing is exported until the user explicitly clicks Confirm.
+
+STEP 7 — Export
+- Generate PDF and DOCX from the same ResumeData. Both must be byte-stable for
+  identical input.
+- PDF: selectable real text (never an image of text), embedded fonts, correct
+  page size, no orphaned section headers.
+- DOCX: real Word styles (Heading 1/2, body), real bullet lists, editable in
+  Word/Google Docs without layout collapse.
+- Filename convention: FirstName_LastName_Role_Resume.pdf
+- Also offer: download the FAQ pack, and download the raw ResumeData JSON so the
+  user can re-import later.
+
+## ATS RULES (hard constraints on every template)
+- Single-column body content. A sidebar is permitted only for a visual variant
+  that is explicitly marked "design-forward, lower ATS safety" in the gallery,
+  and there must always be a true single-column variant.
+- No text inside tables, text boxes, headers, or footers.
+- No icons or graphics carrying information (no icon-only contact details).
+- Standard section headings: Summary, Skills, Experience, Education, Projects,
+  Certifications. Avoid clever renames.
+- Dates in a consistent "MMM YYYY" or "MM/YYYY" format, right-aligned via layout,
+  never via tab characters.
+- Standard fonts only: Inter, Calibri, Arial, Georgia, Source Sans, Lato.
+- Bullets use a plain hyphen or standard bullet glyph; no custom dingbats.
+- Contact line as plain text; email and phone must survive copy-paste extraction.
+- Build an automated check: after PDF export, re-extract text and assert that
+  name, email, phone, every company, and every job title are recoverable.
+  Fail the export with a clear message if not.
+
+## TEMPLATES
+Build 8 original templates. Do NOT copy markup, CSS, or assets from bettercv.com
+or any other resume site — replicate the *category* of layout, not the artwork.
+Use these archetypes:
+ 1. ATS Plain      — maximum parser safety, zero ornament
+ 2. Modern Clean   — thin accent rule under headings, generous whitespace
+ 3. Professional   — conservative serif, banking/legal/consulting feel
+ 4. Compact        — dense, one page, for 8+ years of history
+ 5. Fresher Focus  — education and projects above experience
+ 6. Executive      — leadership summary block, achievements section prominent
+ 7. Academic CV    — publications, teaching, grants; multi-page by design
+ 8. Two-Column     — sidebar for skills/contact, flagged as lower ATS safety
+Each template is a React component consuming ResumeData plus a theme token
+object. Adding a 9th template must require no changes outside its own folder.
+
+## FAQ PACK (only when the user opts in)
+Generate 75 questions tailored to the user's role, seniority, and JD:
+- 25 Basic: fundamentals and definitions for the role
+- 25 Intermediate: applied "how would you do X" questions
+- 25 Advanced: scenario-based. Each must present a concrete situation with
+  constraints, then ask for an approach — troubleshooting, trade-off, design,
+  failure, conflict, or prioritisation scenarios.
+Each entry: question, a model answer (150–250 words), 3–5 key points the
+interviewer is listening for, and a red flag to avoid.
+Also generate 8–10 behavioural questions grounded in the user's actual resume
+content, in STAR format.
+Generate in batches server-side with progress feedback — do not attempt 75
+questions in one call. Export as PDF and DOCX, and render in-app in a
+searchable accordion filtered by difficulty.
+
+## NON-FUNCTIONAL
+- Fully responsive; the step-6 editor must work on a phone.
+- Accessible: keyboard-navigable, labelled inputs, WCAG AA contrast, focus rings.
+- Every long operation shows real progress, not a spinner with no end.
+- Every model call has retry with backoff and a graceful degraded path — if the
+  model is unavailable the user can still edit and export manually.
+- Rate-limit the API routes per session.
+
+## PRIVACY & SECURITY
+- Resumes contain personal data. Process in memory; do not persist server-side
+  in Phase 1. Delete uploads immediately after parsing.
+- Validate and sanitise all uploads; strip EXIF from photos.
+- No third-party analytics on any page that holds resume content.
+- Show a plain-language privacy note on the upload screen.
+- API key server-side only. Verify no key can leak into a client bundle.
+
+## DELIVERABLES
+- Working Next.js app, `npm run dev` from a clean clone
+- CLAUDE.md documenting architecture, the ResumeData contract, and how to add a
+  template
+- README with setup and env vars
+- .env.example
+- Unit tests for: parsers, the ATS extraction assertion, DOCX generation, and
+  the gap-analysis scorer
+- Seed fixtures: 3 sample resumes (fresher IT, experienced non-IT, career
+  changer) plus 2 sample JDs, for testing without real user data
+
+## BUILD PHASES — stop after each and show me the result
+1. Scaffold, ResumeData schema, sample fixtures rendering in one template
+2. Upload + parse + review form
+3. JD analysis + gap report + skill decision flow
+4. All 8 templates + gallery + theming
+5. Editor with live preview, accept/revert, autosave
+6. PDF + DOCX export + the ATS re-extraction test
+7. FAQ generator
+8. Polish, accessibility pass, error handling, tests
+
+## ACCEPTANCE CRITERIA
+- A fresher's 1-page resume and a 12-year veteran's 2-page resume both render
+  correctly in all 8 templates
+- Exported PDF text re-extraction recovers 100% of contact details, companies,
+  and titles
+- Exported DOCX opens in Word and Google Docs with intact styles and bullets
+- No fabricated experience appears anywhere the user did not assert it
+- Full flow from upload to both downloads completes in under 3 minutes
+
+Start with the stack proposal, folder structure, phase plan, and your questions.

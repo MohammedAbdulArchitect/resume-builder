@@ -1,0 +1,102 @@
+{
+  "meta": {
+    "targetRole": "Data Analyst",
+    "seniority": "junior",
+    "locale": "in",
+    "pageSize": "A4"
+  },
+  "personal": {
+    "fullName": "Priya Nair",
+    "headline": "Former Educator, Aspiring Data Analyst",
+    "email": "priya.nair@example.com",
+    "phone": "+91 90123 45678",
+    "location": "Bengaluru, Karnataka",
+    "links": [
+      { "label": "GitHub", "url": "https://github.com/priya-nair" }
+    ]
+  },
+  "summary": {
+    "text": "Secondary school mathematics teacher transitioning into data analysis after completing a 6-month part-time analytics program. Brings strong quantitative reasoning, stakeholder communication, and a portfolio of SQL/Python projects.",
+    "origin": "source"
+  },
+  "experience": [
+    {
+      "company": "Greenfield Public School",
+      "title": "Mathematics Teacher",
+      "location": "Bengaluru, India",
+      "start": "2018-06",
+      "end": "2025-12",
+      "current": false,
+      "bullets": [
+        {
+          "text": "Taught mathematics to 240+ students across grades 9-12, tracking performance trends across five academic years.",
+          "origin": "source"
+        },
+        {
+          "text": "Built a spreadsheet-based dashboard to identify at-risk students from test-score trends, adopted by 4 other teachers.",
+          "origin": "source"
+        }
+      ]
+    }
+  ],
+  "education": [
+    {
+      "institution": "Bengaluru Data Analytics Academy",
+      "degree": "Certificate",
+      "field": "Data Analytics",
+      "start": "2025-06",
+      "end": "2025-12",
+      "highlights": [
+        "Capstone: analyzed 5 years of public school exam results to identify performance drivers"
+      ]
+    },
+    {
+      "institution": "Christ University",
+      "degree": "B.Sc.",
+      "field": "Mathematics",
+      "start": "2014-06",
+      "end": "2017-05",
+      "highlights": []
+    }
+  ],
+  "skills": [
+    { "name": "SQL", "category": "Languages", "proficiency": "hands-on", "years": 1 },
+    { "name": "Python (pandas)", "category": "Languages", "proficiency": "hands-on", "years": 1 },
+    { "name": "Tableau", "category": "Tools", "proficiency": "hands-on" },
+    { "name": "Statistics", "category": "Foundations", "proficiency": "hands-on", "years": 7 },
+    { "name": "Excel", "category": "Tools", "proficiency": "hands-on", "years": 7 }
+  ],
+  "projects": [
+    {
+      "name": "School Exam Performance Dashboard",
+      "role": "Analyst",
+      "description": "Analyzed five years of anonymized exam results to surface trends by subject and grade level.",
+      "stack": ["Python", "pandas", "Tableau"],
+      "bullets": [
+        {
+          "text": "Cleaned and merged 5 years of exam records into a single dataset of 12,000+ rows.",
+          "origin": "source"
+        },
+        {
+          "text": "Built a Tableau dashboard highlighting subjects with the steepest year-over-year score decline.",
+          "origin": "source"
+        }
+      ],
+      "link": "https://github.com/priya-nair/school-performance-dashboard"
+    }
+  ],
+  "certifications": [
+    { "name": "Google Data Analytics Professional Certificate", "issuer": "Google", "date": "2025-11" }
+  ],
+  "achievements": [
+    "Best Teacher Award, Greenfield Public School (2021)"
+  ],
+  "languages": [
+    { "name": "English", "level": "Fluent" },
+    { "name": "Kannada", "level": "Native" },
+    { "name": "Hindi", "level": "Fluent" }
+  ],
+  "publications": [],
+  "volunteering": [],
+  "custom": []
+}

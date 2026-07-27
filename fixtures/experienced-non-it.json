@@ -1,0 +1,101 @@
+{
+  "meta": {
+    "targetRole": "Senior Operations Manager",
+    "seniority": "senior",
+    "locale": "intl",
+    "pageSize": "Letter"
+  },
+  "personal": {
+    "fullName": "Marcus Webb",
+    "headline": "Operations Manager | Supply Chain & Logistics",
+    "email": "marcus.webb@example.com",
+    "phone": "+1 415-555-0182",
+    "location": "Austin, Texas, USA",
+    "links": [
+      { "label": "LinkedIn", "url": "https://linkedin.com/in/marcus-webb" }
+    ]
+  },
+  "summary": {
+    "text": "Operations manager with 11 years leading warehouse and distribution teams for mid-size retailers. Track record of cutting fulfillment costs while improving on-time delivery rates.",
+    "origin": "source"
+  },
+  "experience": [
+    {
+      "company": "Redwood Retail Group",
+      "title": "Operations Manager",
+      "location": "Austin, TX",
+      "start": "2019-02",
+      "end": "",
+      "current": true,
+      "bullets": [
+        {
+          "text": "Lead a team of 45 warehouse staff across two distribution centers, managing scheduling, training, and performance reviews.",
+          "origin": "source"
+        },
+        {
+          "text": "Reduced average order fulfillment time from 36 hours to 19 hours by redesigning the pick-pack workflow.",
+          "origin": "source"
+        },
+        {
+          "text": "Cut annual shipping costs by $310,000 through carrier contract renegotiation.",
+          "origin": "source"
+        }
+      ]
+    },
+    {
+      "company": "Delmar Logistics",
+      "title": "Warehouse Supervisor",
+      "location": "Dallas, TX",
+      "start": "2015-04",
+      "end": "2019-01",
+      "current": false,
+      "bullets": [
+        {
+          "text": "Supervised a 20-person shift, consistently hitting 98%+ inventory accuracy during quarterly audits.",
+          "origin": "source"
+        },
+        {
+          "text": "Introduced a barcode scanning process that cut receiving errors by 40%.",
+          "origin": "source"
+        }
+      ]
+    }
+  ],
+  "education": [
+    {
+      "institution": "University of Texas at Austin",
+      "degree": "B.B.A.",
+      "field": "Supply Chain Management",
+      "start": "2011-08",
+      "end": "2015-05",
+      "highlights": []
+    }
+  ],
+  "skills": [
+    { "name": "Warehouse Management Systems", "category": "Operations", "proficiency": "hands-on", "years": 11 },
+    { "name": "Inventory Forecasting", "category": "Operations", "proficiency": "hands-on", "years": 9 },
+    { "name": "Vendor Negotiation", "category": "Management", "proficiency": "hands-on", "years": 8 },
+    { "name": "Lean Six Sigma", "category": "Process Improvement", "proficiency": "hands-on", "years": 5 }
+  ],
+  "projects": [],
+  "certifications": [
+    { "name": "Lean Six Sigma Green Belt", "issuer": "ASQ", "date": "2020-09" }
+  ],
+  "achievements": [
+    "Employee of the Year, Redwood Retail Group (2022)"
+  ],
+  "languages": [
+    { "name": "English", "level": "Native" }
+  ],
+  "publications": [],
+  "volunteering": [
+    {
+      "organization": "Central Texas Food Bank",
+      "role": "Logistics Volunteer",
+      "start": "2021-01",
+      "end": "",
+      "description": "Coordinate weekend food distribution routes for 6 pickup sites."
+    }
+  ],
+  "custom": []
+}

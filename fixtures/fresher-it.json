@@ -1,0 +1,91 @@
+{
+  "meta": {
+    "targetRole": "Software Engineer",
+    "seniority": "fresher",
+    "locale": "in",
+    "pageSize": "A4"
+  },
+  "personal": {
+    "fullName": "Ananya Sharma",
+    "headline": "Computer Science Graduate",
+    "email": "ananya.sharma@example.com",
+    "phone": "+91 98765 43210",
+    "location": "Pune, Maharashtra",
+    "links": [
+      { "label": "GitHub", "url": "https://github.com/ananya-sharma" },
+      { "label": "LinkedIn", "url": "https://linkedin.com/in/ananya-sharma" }
+    ]
+  },
+  "summary": {
+    "text": "Computer Science graduate with hands-on experience building full-stack web applications during coursework and a 3-month internship. Comfortable with JavaScript, Python, and relational databases.",
+    "origin": "source"
+  },
+  "experience": [
+    {
+      "company": "Nimbus Cloud Labs",
+      "title": "Software Engineering Intern",
+      "location": "Pune, India",
+      "start": "2025-06",
+      "end": "2025-08",
+      "current": false,
+      "bullets": [
+        {
+          "text": "Built a REST API endpoint used by 3 internal tools to fetch aggregated usage metrics.",
+          "origin": "source"
+        },
+        {
+          "text": "Fixed 12 bugs in the customer-facing dashboard, reducing reported UI issues by 20%.",
+          "origin": "source"
+        }
+      ]
+    }
+  ],
+  "education": [
+    {
+      "institution": "Pune Institute of Technology",
+      "degree": "B.Tech",
+      "field": "Computer Science",
+      "start": "2022-08",
+      "end": "2026-05",
+      "grade": "8.4 CGPA",
+      "highlights": [
+        "Relevant coursework: Data Structures, Operating Systems, Database Management Systems"
+      ]
+    }
+  ],
+  "skills": [
+    { "name": "JavaScript", "category": "Languages", "proficiency": "hands-on", "years": 2 },
+    { "name": "Python", "category": "Languages", "proficiency": "hands-on", "years": 2 },
+    { "name": "React", "category": "Frameworks", "proficiency": "hands-on", "years": 1 },
+    { "name": "PostgreSQL", "category": "Databases", "proficiency": "knowledge" },
+    { "name": "Docker", "category": "Tools", "proficiency": "knowledge" }
+  ],
+  "projects": [
+    {
+      "name": "Campus Event Tracker",
+      "role": "Full-stack Developer",
+      "description": "A web app for students to discover and RSVP to campus events.",
+      "stack": ["React", "Node.js", "PostgreSQL"],
+      "bullets": [
+        {
+          "text": "Designed the database schema and built the RSVP flow used by 400+ students.",
+          "origin": "source"
+        }
+      ],
+      "link": "https://github.com/ananya-sharma/campus-events"
+    }
+  ],
+  "certifications": [
+    { "name": "AWS Certified Cloud Practitioner", "issuer": "Amazon Web Services", "date": "2025-03" }
+  ],
+  "achievements": [
+    "Winner, college-level hackathon (2024)"
+  ],
+  "languages": [
+    { "name": "English", "level": "Fluent" },
+    { "name": "Hindi", "level": "Native" }
+  ],
+  "publications": [],
+  "volunteering": [],
+  "custom": []
+}

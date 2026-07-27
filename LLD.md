@@ -16,38 +16,51 @@ This document translates the High-Level Design (HLD) into detailed implementatio
 
 ### 1.1 Account Management
 
-#### Create or get account (on first sign-in)
+> The 400-signup promo cap referenced in earlier drafts of this doc was
+> removed from the spec (HLD, PRODUCT_SPEC_FINAL, CLAUDE_FINAL, phase2.md).
+> There is no promo counter and no `is_promo` semantics anywhere in the app —
+> every account is plain and equal. The `accounts.is_promo` column still
+> exists in the Phase 1 migration (unused, defaults to `false`); dropping a
+> live column is a schema decision left for later, not done implicitly here.
+
+#### Upsert account (on first sign-in)
+
+Implemented in `src/lib/db/accounts.ts` (`upsertAccountOnSignIn`), wired to
+Auth.js's `jwt` callback (`src/lib/auth/index.ts`) so it runs once, on the
+first token issuance after sign-in.
+
 ```sql
--- Check if account exists
-SELECT id, google_sub, email, is_promo, created_at 
-FROM accounts 
-WHERE google_sub = $1;
+-- Fast path: does this google_sub already exist?
+SELECT * FROM accounts WHERE google_sub = $1;
 
--- If not exists, insert
-INSERT INTO accounts (google_sub, email, display_name, locale, is_promo, created_at)
-VALUES ($1, $2, $3, $4, $5, NOW())
-RETURNING id, is_promo, created_at;
+-- Existing account: just touch it.
+UPDATE accounts
+SET email = $2, display_name = $3, last_seen_at = NOW()
+WHERE id = $1
+RETURNING *;
 
--- Check promo counter atomically
-SELECT COUNT(*) as promo_count 
-FROM accounts 
-WHERE is_promo = true 
-AND created_at > (NOW() - INTERVAL '90 days');
+-- New account: insert, then seed a zero-balance credits row in the same
+-- transaction so entitlement checks never hit a missing row. Credits start
+-- at 0/0 — they only ever come from a purchase (Phase 5), never from
+-- signing up.
+INSERT INTO accounts (google_sub, email, display_name, locale)
+VALUES ($1, $2, $3, $4)
+RETURNING *;
+
+INSERT INTO credits (account_id, tailored_resume_credits, faq_pack_credits)
+VALUES ($1, 0, 0);
 ```
 
-#### Grant promo credits (first 400 signups)
-```sql
--- Inside a transaction:
-BEGIN;
-  -- Increment counter
-  UPDATE promo_counter SET count = count + 1 WHERE id = 1;
-  -- If count <= 400, set is_promo = true and grant credits
-  INSERT INTO credits (account_id, tailored_resume_credits, faq_pack_credits, expires_at)
-  VALUES ($1, 1, 1, NOW() + INTERVAL '30 days')
-  ON CONFLICT (account_id) DO UPDATE
-  SET tailored_resume_credits = 1, faq_pack_credits = 1, expires_at = NOW() + INTERVAL '30 days';
-COMMIT;
-```
+**Race safety:** two concurrent sign-ins for the same brand-new `google_sub`
+(a double-click, two tabs, two parallel test workers) both take the
+"not found" branch above and both attempt the insert. Rather than adding a
+heavier lock, the unique constraint on `accounts.google_sub` is the real
+arbiter: the losing insert fails with Postgres error `23505`, and
+`upsertAccountOnSignIn` catches that specifically (walking the error's
+`.cause` chain, since Drizzle/Auth.js wrap the raw driver error at varying
+depth) and falls back to updating the winner's row instead of failing the
+sign-in. This was a real bug caught by `tests/e2e/upload-review.spec.ts`
+racing `tests/e2e/auth.spec.ts` in parallel workers, not a hypothetical.
 
 ### 1.2 Resume Persistence
 
@@ -74,32 +87,47 @@ WHERE id = $1 AND account_id = $2;
 
 ### 1.3 Credit Ledger
 
-#### Debit credits (before model call)
-```sql
-BEGIN;
-  -- Check balance
-  SELECT tailored_resume_credits, faq_pack_credits 
-  FROM credits 
-  WHERE account_id = $1 AND expires_at > NOW();
-  
-  -- Debit atomically
-  UPDATE credits 
-  SET tailored_resume_credits = tailored_resume_credits - 1 
-  WHERE account_id = $1 AND tailored_resume_credits > 0
-  RETURNING tailored_resume_credits;
-  
-  -- If successful, proceed with model call
-  -- If UPDATE returns 0 rows, ROLLBACK and return error
-COMMIT/ROLLBACK;
-```
+Implemented in `src/lib/billing/ledger.ts`. Debit is a **single conditional
+`UPDATE ... RETURNING`**, not a separate check-then-update-in-a-transaction
+as earlier drafts of this doc showed — Postgres's row-level locking already
+makes this atomic on its own, with no manual `SELECT ... FOR UPDATE` and no
+explicit `BEGIN`/`COMMIT`/`ROLLBACK` needed:
 
-#### Refund credits (if model call fails)
 ```sql
--- Same transaction that debited, ROLLBACK automatically refunds
-UPDATE credits 
-SET tailored_resume_credits = tailored_resume_credits + 1 
+-- Debit: zero rows returned means insufficient credit; balance untouched,
+-- caller sees { ok: false, reason: "insufficient_credit" }.
+UPDATE credits
+SET tailored_resume_credits = tailored_resume_credits - 1, updated_at = NOW()
+WHERE account_id = $1 AND tailored_resume_credits > 0
+RETURNING *;
+
+-- Refund: always succeeds, no guard needed.
+UPDATE credits
+SET tailored_resume_credits = tailored_resume_credits + 1, updated_at = NOW()
 WHERE account_id = $1;
 ```
+
+The identical pattern (`debitFaqPackCredit` / `refundFaqPackCredit`) exists
+for `faq_pack_credits`, independent of the tailored-resume counter.
+
+Entitlement reads (`src/lib/billing/entitlements.ts`) additionally treat an
+**expired `expires_at` as zero remaining credits**, even when the raw
+counters are still positive:
+
+```sql
+SELECT tailored_resume_credits, faq_pack_credits, expires_at
+FROM credits
+WHERE account_id = $1;
+-- Application layer: if expires_at is in the past, both counters read as 0
+-- (canTailorResume / canGenerateFAQPack return false).
+```
+
+**Not yet wired to a real spend site.** The ledger and entitlements modules
+exist and are tested against the real dev database
+(`tests/ledger.test.ts` — debit never negative, refund restores balance,
+faq/tailored credits independent, expired credits rejected), but nothing
+calls `debitTailoredResumeCredit` in a live request path yet, since
+`/api/analyze` (Phase 6) is still a `501` stub.
 
 ### 1.4 Usage Logging
 
@@ -210,6 +238,12 @@ export async function POST(req: Request) {
 
 ### 2.2 POST /api/analyze (Haiku Real-Time)
 
+> **Not yet implemented** — Phase 6. Currently a `501` stub
+> (`src/app/api/analyze/route.ts`). The request/response shapes and gap
+> logic below are still design-stage; the ledger call in the snippet has
+> been updated to match the real `src/lib/billing/ledger.ts` module built
+> in Phase 2, so Phase 6 doesn't reinvent the debit pattern.
+
 **Purpose:** JD analysis + gap detection
 
 **Request:**
@@ -236,41 +270,30 @@ export async function POST(req: Request) {
 **Ledger Transaction:**
 ```typescript
 export async function POST(req: Request) {
-  const session = await auth();
+  const { accountId } = await requireAccount(); // src/lib/auth/require-account.ts
   const { resumeId, jdText } = await req.json();
-  
-  // 1. Check entitlement
-  const canTailor = await entitlements.canTailorResume(session.user.id);
-  if (!canTailor) {
+
+  // 1. Meter before you spend (CLAUDE_FINAL.md I11): a single atomic
+  // conditional UPDATE, not a manual check-then-update transaction.
+  const debit = await debitTailoredResumeCredit(accountId); // src/lib/billing/ledger.ts
+  if (!debit.ok) {
     return Response.json({ error: 'Upgrade required' }, { status: 403 });
   }
-  
-  // 2. Begin transaction
-  const tx = await db.transaction(async (txn) => {
-    // 3. Debit credit
-    const debited = await txn.update(credits)
-      .set({ tailored_resume_credits: sql`tailored_resume_credits - 1` })
-      .where(and(
-        eq(credits.accountId, session.user.id),
-        gt(credits.tailoredResumeCredits, 0)
-      ))
-      .returning();
-    
-    if (!debited.length) {
-      throw new Error('No credits available');
-    }
-    
-    // 4. Call model (inside transaction)
-    const resume = await getResume(resumeId);
+
+  try {
+    // 2. Call model
+    const resume = await getOwnedResume(accountId, resumeId);
     const aiResponse = await analyzeGaps(resume.data, jdText);
-    
-    // 5. Log usage
-    await logUsage(session.user.id, 'analyze', 'haiku', aiResponse.tokens);
-    
-    return aiResponse;
-  });
-  
-  return Response.json(tx);
+
+    // 3. Log usage
+    await logUsage(accountId, 'analyze', 'haiku', aiResponse.tokens);
+
+    return Response.json(aiResponse);
+  } catch (err) {
+    // 4. Model call failed after the credit was already spent — refund.
+    await refundTailoredResumeCredit(accountId);
+    throw err;
+  }
 }
 ```
 
@@ -677,23 +700,23 @@ useEffect(() => {
 }, [resumeData, resumeId]);
 ```
 
-### 4.2 Credit State (Real-time)
+### 4.2 Credit State (Server-Rendered, No Client Fetch)
 
-**Server side:** Query at route time
+There is no `/api/credits` route. `src/app/account/page.tsx` is a Server
+Component that calls the entitlements module directly during render — the
+numbers are correct on first paint, no loading state, no client fetch:
+
 ```typescript
-const credits = await db.query.credits.findFirst({
-  where: eq(credits.accountId, userId)
-});
+const [tailoredRemaining, faqRemaining, expiresAt] = await Promise.all([
+  tailoredResumesRemaining(accountId),
+  faqPacksRemaining(accountId),
+  creditsExpireAt(accountId),
+]);
 ```
 
-**Client side:** Display + refetch after purchase
-```typescript
-const [credits, setCredits] = useState(null);
-
-useEffect(() => {
-  fetch('/api/credits').then(r => r.json()).then(setCredits);
-}, []);
-```
+When Phase 5 adds a real purchase flow, a webhook-granted credit will need
+the account page to reflect the new balance — that's a `revalidatePath` /
+full navigation on return from checkout, not a polling fetch loop.
 
 ---
 
@@ -826,7 +849,10 @@ Keep concurrent renders ≤ 2 to avoid blocking other requests. Use a simple in-
 ## 9. Security Guidelines
 
 - **Encryption:** AES-256-GCM for resume data at rest (app-layer)
-- **Auth:** JWT cookies, httpOnly, secure, sameSite=strict
+- **Auth:** Auth.js v5, JWT session strategy — the session cookie is
+  encrypted (JWE), httpOnly, secure in production. `sameSite=lax` (Auth.js's
+  default), not `strict` — `strict` would drop the cookie on the top-level
+  redirect back from Google's OAuth consent screen, breaking sign-in.
 - **Rate limiting:** 100 requests/min per account on `/api/*` routes
 - **CORS:** Same-origin only (no cross-origin API calls)
 - **Input validation:** Zod on every POST/PUT

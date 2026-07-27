@@ -1,0 +1,37 @@
+Ananya Sharma
+Computer Science Graduate
+ananya.sharma@example.com | +91 98765 43210
+Pune, Maharashtra
+https://github.com/ananya-sharma
+https://linkedin.com/in/ananya-sharma
+
+Summary
+Computer Science graduate with hands-on experience building full-stack web applications during coursework and a 3-month internship. Comfortable with JavaScript, Python, and relational databases.
+
+Experience
+Software Engineering Intern, Nimbus Cloud Labs — Pune, India
+Jun 2025 – Aug 2025
+- Built a REST API endpoint used by 3 internal tools to fetch aggregated usage metrics.
+- Fixed 12 bugs in the customer-facing dashboard, reducing reported UI issues by 20%.
+
+Education
+B.Tech, Computer Science — Pune Institute of Technology
+Aug 2022 – May 2026
+- Relevant coursework: Data Structures, Operating Systems, Database Management Systems
+
+Skills
+JavaScript, Python, React, PostgreSQL, Docker
+
+Projects
+Campus Event Tracker — Full-stack Developer
+Stack: React, Node.js, PostgreSQL
+- Designed the database schema and built the RSVP flow used by 400+ students.
+
+Certifications
+AWS Certified Cloud Practitioner — Amazon Web Services (Mar 2025)
+
+Achievements
+Winner, college-level hackathon (2024)
+
+Languages
+English (Fluent), Hindi (Native)

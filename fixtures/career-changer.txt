@@ -1,0 +1,40 @@
+Priya Nair
+Former Educator, Aspiring Data Analyst
+priya.nair@example.com | +91 90123 45678
+Bengaluru, Karnataka
+https://github.com/priya-nair
+
+Summary
+Secondary school mathematics teacher transitioning into data analysis after completing a 6-month part-time analytics program. Brings strong quantitative reasoning, stakeholder communication, and a portfolio of SQL/Python projects.
+
+Experience
+Mathematics Teacher, Greenfield Public School — Bengaluru, India
+Jun 2018 – Dec 2025
+- Taught mathematics to 240+ students across grades 9-12, tracking performance trends across five academic years.
+- Built a spreadsheet-based dashboard to identify at-risk students from test-score trends, adopted by 4 other teachers.
+
+Education
+Certificate, Data Analytics — Bengaluru Data Analytics Academy
+Jun 2025 – Dec 2025
+- Capstone: analyzed 5 years of public school exam results to identify performance drivers
+
+B.Sc., Mathematics — Christ University
+Jun 2014 – May 2017
+
+Skills
+SQL, Python (pandas), Tableau, Statistics, Excel
+
+Projects
+School Exam Performance Dashboard — Analyst
+Stack: Python, pandas, Tableau
+- Cleaned and merged 5 years of exam records into a single dataset of 12,000+ rows.
+- Built a Tableau dashboard highlighting subjects with the steepest year-over-year score decline.
+
+Certifications
+Google Data Analytics Professional Certificate — Google (Nov 2025)
+
+Achievements
+Best Teacher Award, Greenfield Public School (2021)
+
+Languages
+English (Fluent), Kannada (Native), Hindi (Fluent)

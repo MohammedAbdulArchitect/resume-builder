@@ -7,7 +7,11 @@ config({ path: ".env.local" });
 
 export default defineConfig({
   testDir: "./tests/e2e",
-  fullyParallel: true,
+  // auth.spec.ts and upload-review.spec.ts both sign in as the same fixed
+  // credentials-test identity and share its DB row across the run —
+  // keep spec files from racing each other's setup/cleanup.
+  fullyParallel: false,
+  globalTeardown: "./tests/e2e/global-teardown.ts",
   reporter: "list",
   use: {
     baseURL: "http://localhost:3000",

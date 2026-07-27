@@ -7,6 +7,10 @@ export const templateRegistry: TemplateDefinition[] = [
     name: "ATS Plain",
     description: "Maximum parser safety — single column, no tables, standard headings.",
     component: AtsPlainTemplate,
+    isSingleColumn: true,
+    hasTableContent: false,
+    hasStandardHeadings: true,
+    fontInApprovedList: true,
   },
 ];
 

@@ -16,4 +16,10 @@ export interface TemplateDefinition {
   name: string;
   description: string;
   component: ComponentType<TemplateProps>;
+  // ATS-relevant layout facts, consumed by ats/score.ts's computeAtsScore
+  // (CLAUDE_FINAL.md §5 / PRODUCT_SPEC_FINAL.md §7).
+  isSingleColumn: boolean;
+  hasTableContent: boolean;
+  hasStandardHeadings: boolean;
+  fontInApprovedList: boolean;
 }

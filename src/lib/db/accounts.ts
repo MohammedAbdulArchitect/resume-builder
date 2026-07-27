@@ -15,46 +15,84 @@ export async function getAccountByGoogleSub(googleSub: string) {
   return account ?? null;
 }
 
+export async function getAccountById(accountId: string) {
+  const [account] = await db.select().from(accounts).where(eq(accounts.id, accountId));
+  return account ?? null;
+}
+
+// Drizzle/pg wrap the raw Postgres error in layers of DrizzleQueryError /
+// AuthError .cause chaining, so the "23505" unique-violation code can sit at
+// varying depth depending on the call path — walk the cause chain instead
+// of assuming it's on the top-level error.
+function isUniqueViolation(error: unknown): boolean {
+  let current: unknown = error;
+  for (let depth = 0; depth < 6 && current; depth++) {
+    if (typeof current === "object" && "code" in current && (current as { code?: unknown }).code === "23505") {
+      return true;
+    }
+    current = (current as { cause?: unknown }).cause;
+  }
+  return false;
+}
+
 // Upserts on first sign-in. New accounts get a zero-balance credits row in
 // the same transaction so entitlement checks never hit a missing row.
+//
+// Race-safe under concurrent sign-ins for the same brand-new google_sub
+// (e.g. a double-click, two tabs, or two parallel test workers): the fast
+// path below is a plain select-then-branch, which has a check-then-insert
+// race window. Rather than closing it with a heavier lock, we let the
+// unique constraint on accounts.google_sub be the real arbiter — if two
+// inserts race, the loser's insert fails with 23505 and falls back to
+// updating the winner's row instead of propagating the error.
 export async function upsertAccountOnSignIn(profile: SignInProfile) {
-  return db.transaction(async (tx) => {
-    const [existing] = await tx
-      .select()
-      .from(accounts)
-      .where(eq(accounts.googleSub, profile.providerSub));
-
-    if (existing) {
-      const [updated] = await tx
-        .update(accounts)
-        .set({
-          email: profile.email,
-          displayName: profile.displayName ?? existing.displayName,
-          lastSeenAt: new Date(),
-        })
-        .where(eq(accounts.id, existing.id))
-        .returning();
-      return updated;
-    }
-
-    const [created] = await tx
-      .insert(accounts)
-      .values({
-        googleSub: profile.providerSub,
+  const [existing] = await db.select().from(accounts).where(eq(accounts.googleSub, profile.providerSub));
+  if (existing) {
+    const [updated] = await db
+      .update(accounts)
+      .set({
         email: profile.email,
-        displayName: profile.displayName ?? null,
-        locale: profile.locale,
+        displayName: profile.displayName ?? existing.displayName,
+        lastSeenAt: new Date(),
       })
+      .where(eq(accounts.id, existing.id))
       .returning();
+    return updated;
+  }
 
-    await tx.insert(credits).values({
-      accountId: created.id,
-      tailoredResumeCredits: 0,
-      faqPackCredits: 0,
+  try {
+    return await db.transaction(async (tx) => {
+      const [created] = await tx
+        .insert(accounts)
+        .values({
+          googleSub: profile.providerSub,
+          email: profile.email,
+          displayName: profile.displayName ?? null,
+          locale: profile.locale,
+        })
+        .returning();
+
+      await tx.insert(credits).values({
+        accountId: created.id,
+        tailoredResumeCredits: 0,
+        faqPackCredits: 0,
+      });
+
+      return created;
     });
+  } catch (error) {
+    if (!isUniqueViolation(error)) throw error;
 
-    return created;
-  });
+    const [winner] = await db.select().from(accounts).where(eq(accounts.googleSub, profile.providerSub));
+    if (!winner) throw error;
+
+    const [updated] = await db
+      .update(accounts)
+      .set({ email: profile.email, lastSeenAt: new Date() })
+      .where(eq(accounts.id, winner.id))
+      .returning();
+    return updated;
+  }
 }
 
 // Ordered deletes (not ON DELETE CASCADE) so the deletion path stays

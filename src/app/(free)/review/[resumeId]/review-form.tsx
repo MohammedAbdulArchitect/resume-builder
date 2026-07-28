@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
+import Link from "next/link";
 import { ChevronDown, ChevronUp, Plus, X } from "lucide-react";
 import type {
   CertificationEntry,
@@ -14,6 +15,7 @@ import type {
 import type { UnassignedBlock } from "@/lib/parsers/types";
 import { takeUnassignedBlocks } from "@/app/(free)/unassigned-storage";
 import { computeAtsScore } from "@/lib/ats/score";
+import { getLocaleProfile } from "@/lib/locale";
 import { getTemplate } from "@/templates/registry";
 import { saveResumeData } from "@/app/(free)/review/[resumeId]/actions";
 import { Button } from "@/components/ui/button";
@@ -62,10 +64,12 @@ function LabeledInput({
   label,
   value,
   onChange,
+  placeholder,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  placeholder?: string;
 }) {
   return (
     <label className="flex flex-col gap-1 text-sm">
@@ -73,6 +77,7 @@ function LabeledInput({
       <input
         className="rounded-md border border-border bg-background px-3 py-1.5"
         value={value}
+        placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
       />
     </label>
@@ -150,6 +155,7 @@ function AtsScoreBadge({ score }: { score: number }) {
 
 function PersonalSection({ data, setData }: { data: ResumeData; setData: Updater }) {
   const personal = data.personal;
+  const localeProfile = getLocaleProfile(data.meta.locale);
   function update(patch: Partial<ResumeData["personal"]>) {
     setData((prev) => ({ ...prev, personal: { ...prev.personal, ...patch } }));
   }
@@ -161,8 +167,18 @@ function PersonalSection({ data, setData }: { data: ResumeData; setData: Updater
         <LabeledInput label="Full name" value={personal.fullName ?? ""} onChange={(v) => update({ fullName: v })} />
         <LabeledInput label="Headline" value={personal.headline ?? ""} onChange={(v) => update({ headline: v })} />
         <LabeledInput label="Email" value={personal.email ?? ""} onChange={(v) => update({ email: v })} />
-        <LabeledInput label="Phone" value={personal.phone ?? ""} onChange={(v) => update({ phone: v })} />
-        <LabeledInput label="Location" value={personal.location ?? ""} onChange={(v) => update({ location: v })} />
+        <LabeledInput
+          label="Phone"
+          value={personal.phone ?? ""}
+          placeholder={localeProfile.phonePlaceholder}
+          onChange={(v) => update({ phone: v })}
+        />
+        <LabeledInput
+          label="Location"
+          value={personal.location ?? ""}
+          placeholder={localeProfile.locationPlaceholder}
+          onChange={(v) => update({ location: v })}
+        />
       </div>
     </section>
   );
@@ -828,6 +844,11 @@ export function ReviewForm({ resumeId, initialData }: { resumeId: string; initia
           <Button type="button" onClick={handleSave} disabled={saveState === "saving"}>
             {saveState === "saving" ? "Saving…" : "Save"}
           </Button>
+          <Link href={`/template/${resumeId}`}>
+            <Button type="button" variant="outline">
+              Choose template
+            </Button>
+          </Link>
         </div>
       </header>
       {saveState === "saved" ? <p className="text-sm text-green-700">Saved.</p> : null}

@@ -1,16 +1,10 @@
 import { Inter } from "next/font/google";
 import type { TemplateProps } from "@/templates/types";
+import { formatDateRange } from "@/templates/shared/date-range";
 
 // Inter is on the approved font list (PRODUCT_SPEC_FINAL.md §12 / A6).
 // Scoped to this template only — the app chrome may use a different font.
 const inter = Inter({ subsets: ["latin"] });
-
-function dateRange(start?: string, end?: string, current?: boolean): string {
-  const from = start ?? "";
-  const to = current ? "Present" : (end ?? "");
-  if (!from && !to) return "";
-  return [from, to].filter(Boolean).join(" – ");
-}
 
 export function AtsPlainTemplate({ data }: TemplateProps) {
   const { personal, summary, experience, education, skills, projects, certifications, achievements, languages } =
@@ -51,7 +45,7 @@ export function AtsPlainTemplate({ data }: TemplateProps) {
                     {entry.title}
                     {entry.company ? `, ${entry.company}` : ""}
                   </span>
-                  <span className="text-neutral-600">{dateRange(entry.start, entry.end, entry.current)}</span>
+                  <span className="text-neutral-600">{formatDateRange(entry.start, entry.end, entry.current)}</span>
                 </div>
                 {entry.location ? <p className="text-xs text-neutral-600">{entry.location}</p> : null}
                 {entry.bullets.length > 0 ? (
@@ -78,7 +72,7 @@ export function AtsPlainTemplate({ data }: TemplateProps) {
                     {entry.degree}
                     {entry.field ? `, ${entry.field}` : ""}
                   </span>
-                  <span className="text-neutral-600">{dateRange(entry.start, entry.end)}</span>
+                  <span className="text-neutral-600">{formatDateRange(entry.start, entry.end)}</span>
                 </div>
                 <p className="text-xs text-neutral-600">
                   {entry.institution}

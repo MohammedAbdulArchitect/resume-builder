@@ -8,3 +8,6 @@ function stubFont() {
 export const Inter = stubFont;
 export const Geist = stubFont;
 export const Geist_Mono = stubFont;
+export const Lato = stubFont;
+export const Source_Sans_3 = stubFont;
+export const Gelasio = stubFont;
